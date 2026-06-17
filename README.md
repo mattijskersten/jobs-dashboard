@@ -17,8 +17,7 @@ committed). Copy the templates into `data/` to get started (see **Setup**).
 | Path | Purpose |
 |---|---|
 | `hiring-cafe-mcp/` | MCP server for the unofficial hiring.cafe API (see its README) |
-| `.claude/commands/pipeline.md` | `/pipeline` — one full run: search → triage → tailor → report |
-| `.claude/commands/promote.md` | `/promote` — move a needs-review job to shortlisted |
+| `.claude/commands/` | `/pipeline` (triage → tailor → report the queue); the collection commands `/ingest-hiringcafe`, `/ingest-linkedin`, `/ingest-jd`; and `/promote` |
 | `tooling/` | CV build assets (`build.sh`, `cv-template.tex`, `cv-filter.lua`) and tailoring rules (`AGENTS.md`) |
 | `templates/` | Sanitized templates that ship: `cv.example.md`, `search-profile.example.md`, `cv-example-{1,2}.md` |
 | `scripts/` | `run-pipeline.sh` (headless entry), `ingest.sh` (mechanical search→DB), `ingest-jd.sh` (land a hand-supplied JD→DB), `tailor-pending.sh`, `tailor-job.sh`, `promote.sh`, `init-db.sh`, `backfill-job-fields.py` |
@@ -53,9 +52,15 @@ permission-bypassing flags anywhere.
 scripts/run-pipeline.sh
 ```
 
-Takes a `flock` on `data/.pipeline.lock` and exits cleanly if a run is already
-in progress. Reruns are idempotent: jobs are deduped by hiring.cafe job id and
-never re-triaged.
+This collects hiring.cafe (`scripts/ingest.sh`, full window on an empty DB —
+override with `JOBS_INGEST_DAYS`) and then runs `/pipeline` to process the
+queue. Takes a `flock` on `data/.pipeline.lock` and exits cleanly if a run is
+already in progress. Reruns are idempotent: jobs are deduped by job id and never
+re-triaged.
+
+Collection and processing are separate, so a manual full run is two steps —
+`/ingest-hiringcafe` (and/or `/ingest-linkedin`, `/ingest-jd`) to land jobs,
+then `/pipeline` to triage → tailor → report whatever is queued.
 
 **Nightly cron** (3:30 AM, log to file):
 
@@ -71,6 +76,10 @@ Or as a systemd user timer, point `ExecStart` at the same script.
 - `/promote <job_id|company>` (or `scripts/promote.sh <job_id>`) moves a
   needs-review job to shortlisted; the next run tailors it. Add `reject` to
   reject instead. `scripts/tailor-pending.sh` tailors immediately.
+- **Search hiring.cafe** with `/ingest-hiringcafe` (or `scripts/ingest.sh
+  --days N`): runs the standard mechanical passes and lands new jobs as `seen`
+  rows for the next `/pipeline` to triage. This is the same collection the
+  nightly script runs, exposed as a standalone command.
 - **Ingest a JD you found elsewhere** (a referral, a direct link) with
   `/ingest-jd <path-to-jd-file> [company] [title]`: it saves the JD, triages it
   against the profile, and tailors immediately if it scores ≥ 8 — no hiring.cafe
@@ -91,26 +100,32 @@ Or as a systemd user timer, point `ExecStart` at the same script.
 
 ## How a run works
 
-1. **Search** — `scripts/ingest.sh` mechanically runs eight hiring.cafe
-   passes (2 tracks × {departments, broad query} × {local-50mi, remote},
-   always Senior Level + People Manager), paginates to exhaustion, and
-   inserts every unseen hit as a `seen` row with its compact summary — so
-   no result can be silently lost in model context.
-2. **Triage** — the agent scores only `seen` rows from the database. Hard
-   filters (location and seniority, per your search profile) are pass/fail;
-   survivors get a 1–10 score (stale postings score lower). Every job is
-   recorded with score and rationale. ≥ 8 auto-shortlists, 6–7 waits in
-   needs-review, ≤ 5 is rejected. JDs for everything ≥ 6 are saved to disk
-   at triage time because postings disappear.
-3. **Tailor** — every `shortlisted` job (new or promoted), capped at the 5
+**Collection** is separate from processing and lands `status = 'seen'` rows in
+`data/jobs.db`, each with a compact summary — so no result can be silently lost
+in model context. Three sources, each its own command:
+
+- **hiring.cafe** (`/ingest-hiringcafe`, run by the nightly script) —
+  `scripts/ingest.sh` mechanically runs eight passes (2 tracks ×
+  {departments, broad query} × {local-50mi, remote}, always Senior Level +
+  People Manager), paginating to exhaustion.
+- **LinkedIn** (`/ingest-linkedin`, on-demand) — a small, paced set of searches.
+- **Manual** (`/ingest-jd`) — one hand-supplied JD.
+
+Then **`/pipeline`** processes the queue (source-agnostic):
+
+1. **Triage** — scores only `seen` rows. Hard filters (location and seniority,
+   per your search profile) are pass/fail; survivors get a 1–10 score (stale
+   postings score lower), recorded with rationale. ≥ 8 auto-shortlists, 6–7
+   waits in needs-review, ≤ 5 is rejected. JDs for everything ≥ 6 are saved to
+   disk at triage time (using the source's details tool) because postings vanish.
+2. **Tailor** — every `shortlisted` job (new or promoted), capped at the 5
    highest-scoring per run. Each runs as its own headless `claude` session so
    it is independently resumable; the session id is stored on the job row.
    Outputs are drafts for review, built to PDF via `tooling/build.sh` under the
    rules in `tooling/AGENTS.md`.
-4. **Report** — digest to `data/reports/run-<id>-<date>.md`: new jobs with
-   scores, what was tailored, what awaits review, errors. The hiring.cafe API
-   is unofficial; an outage produces an error entry in the digest and a clean
-   exit, never a hung run.
+3. **Report** — digest to `data/reports/run-<id>-<date>.md`: new jobs with
+   scores, what was tailored, what awaits review, errors. An upstream outage
+   produces an error entry in the digest and a clean exit, never a hung run.
 
 ## Job statuses
 
