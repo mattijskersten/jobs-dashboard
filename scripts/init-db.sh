@@ -2,7 +2,7 @@
 # Create/migrate data/jobs.db. Idempotent — safe to run at the start of every pipeline run.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-mkdir -p "$ROOT/data/jds" "$ROOT/data/reports" "$ROOT/data/cvs"
+mkdir -p "$ROOT/data/jds" "$ROOT/data/reports" "$ROOT/data/cvs" "$ROOT/data/references"
 sqlite3 "$ROOT/data/jobs.db" < "$ROOT/scripts/schema.sql"
 
 # Migrations for databases created before a column existed in schema.sql

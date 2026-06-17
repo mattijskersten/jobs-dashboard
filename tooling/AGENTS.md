@@ -1,27 +1,27 @@
 # CV Tailoring Guide
 
-This directory holds the candidate's CV as a Markdown source file compiled to
-PDF via Pandoc + XeLaTeX, plus the tailoring rules, so the jobs-dashboard
-pipeline is self-contained.
+`tooling/` holds the CV build assets (Pandoc template + Lua filter, `build.sh`)
+and these tailoring rules, so the jobs-dashboard pipeline is self-contained.
+The candidate's CV is compiled to PDF via Pandoc + XeLaTeX.
 
-The real `cv/cv.md` and the worked examples in `cv/examples/` are personal and
-gitignored — the repo ships `cv/cv.example.md` and `cv/examples/example-*.md`
-as sanitized templates. Copy the master template into place once with
-`cp cv/cv.example.md cv/cv.md`, then edit it.
+The master CV `data/cv.md`, the style-reference CVs in `data/references/`, and
+the job criteria `data/search-profile.md` are personal and gitignored — the
+repo ships sanitized templates under `templates/`. Copy the master template
+into place once with `cp templates/cv.example.md data/cv.md`, then edit it.
 
 ## The one rule
 
-**Only edit `cv.md` (or a tailored copy of it).** The layout files
-(`cv-template.tex`, `cv-filter.lua`) must not be touched.
+**Only edit `data/cv.md` (or a tailored copy of it).** The layout files
+(`tooling/cv-template.tex`, `tooling/cv-filter.lua`) must not be touched.
 
 ---
 
 ## Build
 
 ```bash
-cv/build.sh                              # cv.md → cv-output.pdf (master CV)
-cv/build.sh "data/cvs/cv Foo.md"         # named file → PDF next to it
-cv/build.sh input.md output.pdf          # explicit input and output
+tooling/build.sh                          # data/cv.md → data/cv-output.pdf (master CV)
+tooling/build.sh "data/cvs/cv Foo.md"     # named file → PDF next to it
+tooling/build.sh input.md output.pdf      # explicit input and output
 ```
 
 Template and filter paths are resolved relative to the script, so it can be run
@@ -33,13 +33,14 @@ Requires: `pandoc`, `xelatex` (texlive-xetex), Carlito font (pre-installed).
 
 ## File overview
 
-| File | Purpose |
+| Path | Purpose |
 |---|---|
-| `cv.md` | **Master CV content** — the base for every tailored variant (your copy of `cv.example.md`; gitignored) |
-| `cv.example.md` | Sanitized master-CV template that ships in the repo |
-| `examples/*.md` | Worked examples of tailored CVs, read as style references. Drop your real ones here (gitignored); the shipped `example-*.md` placeholders are skipped by `tailor-job.sh` whenever any real example is present, and used only as a fallback on a fresh clone. |
-| `cv-template.tex` / `cv-filter.lua` | Layout — do not edit for content changes |
-| `build.sh` | Compile command |
+| `data/cv.md` | **Master CV content** — the base for every tailored variant (your copy of `templates/cv.example.md`; gitignored) |
+| `templates/cv.example.md` | Sanitized master-CV template that ships in the repo |
+| `templates/cv-example-*.md` | Sanitized worked-example CVs that ship as a fallback style reference for fresh clones |
+| `data/references/*.md` | Your real worked-example CVs, read as style references (gitignored). `tailor-job.sh` uses these when present and falls back to `templates/cv-example-*.md` otherwise. |
+| `tooling/cv-template.tex` / `tooling/cv-filter.lua` | Layout — do not edit for content changes |
+| `tooling/build.sh` | Compile command |
 
 In this repo, pipeline-generated artifacts live under `data/` (gitignored):
 - Job descriptions: `data/jds/JD $COMPANY $JOBID.txt` (the hiring.cafe job id is
@@ -52,9 +53,9 @@ In this repo, pipeline-generated artifacts live under `data/` (gitignored):
 
 Given a JD file:
 
-1. Read the JD in full, then `cv.md` (for structure, section order, and
-   formatting conventions) and the worked example CVs in `cv/examples/` for
-   richer background material and as style references.
+1. Read the JD in full, then `data/cv.md` (for structure, section order, and
+   formatting conventions) and the worked example CVs (in `data/references/`,
+   or `templates/cv-example-*.md`) for richer background and style references.
 2. **Write down the 3–5 most important themes/requirements** before drafting:
    seniority and scope signals (org size, revenue, company stage), domain
    emphasis, and terminology the JD repeats (mirror it per "Keyword mirroring"

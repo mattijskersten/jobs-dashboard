@@ -11,7 +11,7 @@ languages: "English (native) · Other (working)"
 WORKED EXAMPLE (track B — IT leadership at a non-tech company). A sanitized
 illustration of cv.md tailored to a JD emphasizing large-scale IT operations,
 supplier governance, and regulated environments. Replace with your own real
-tailored CVs in cv/examples/ (gitignored) for better style references.
+tailored CVs in data/references/ (gitignored) for better style references.
 -->
 
 ::: summary

@@ -12,7 +12,7 @@ WORKED EXAMPLE (track A — product leadership). A sanitized illustration of
 cv.md tailored to a specific JD: the summary and lead bullets foreground the
 JD's themes (platform/PaaS strategy, 0-to-1 commercialization, large eng org),
 mirroring the JD's terminology where truthful. Replace with your own real
-tailored CVs in cv/examples/ (they are gitignored) for better style references.
+tailored CVs in data/references/ (gitignored) for better style references.
 -->
 
 ::: summary

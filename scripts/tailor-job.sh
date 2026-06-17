@@ -5,7 +5,7 @@
 #
 # Reads company + JD path from data/jobs.db, runs a fresh `claude -p` session
 # that writes "data/cvs/cv <Candidate> $COMPANY.md" + PDF (the candidate name is
-# read from cv/cv.md's front matter), then stores the session id and CV paths
+# read from data/cv.md's front matter), then stores the session id and CV paths
 # back in the job's row (status → tailored).
 # The stored session id can be resumed later: claude --resume <session_id>
 set -euo pipefail
@@ -27,8 +27,8 @@ if [ ! -f "$ROOT/$JD_PATH" ]; then
   exit 1
 fi
 
-# Candidate name from cv/cv.md front matter (for the output filename); blank if absent
-CANDIDATE=$(sed -n 's/^name:[[:space:]]*//p' "$ROOT/cv/cv.md" 2>/dev/null | head -1 | tr -d '"' | sed 's/  */ /g; s/^ //; s/ $//')
+# Candidate name from data/cv.md front matter (for the output filename); blank if absent
+CANDIDATE=$(sed -n 's/^name:[[:space:]]*//p' "$ROOT/data/cv.md" 2>/dev/null | head -1 | tr -d '"' | sed 's/  */ /g; s/^ //; s/ $//')
 
 # Company name as a filename label (strip path-hostile characters)
 LABEL=$(printf '%s' "$COMPANY" | tr -d '/\\:*?"<>|' | sed 's/  */ /g; s/^ //; s/ $//')
@@ -37,30 +37,32 @@ CV_MD="data/cvs/$BASE.md"
 CV_PDF="data/cvs/$BASE.pdf"
 
 # Worked-example CVs to feed the model as style references. Prefer your real
-# ones in cv/examples/; the shipped example-*.md are sanitized placeholders for
-# public clones and are skipped whenever any real example is present.
-refs=(); placeholders=()
-for f in "$ROOT"/cv/examples/*.md; do
-  [ -e "$f" ] || continue
-  b=$(basename "$f")
-  if [[ "$b" == example-*.md ]]; then placeholders+=("cv/examples/$b"); else refs+=("cv/examples/$b"); fi
+# ones in data/references/ (gitignored); fall back to the shipped sanitized
+# templates/cv-example-*.md only when no real reference is present (fresh clone).
+refs=()
+for f in "$ROOT"/data/references/*.md; do
+  [ -e "$f" ] && refs+=("data/references/$(basename "$f")")
 done
-if [ "${#refs[@]}" -eq 0 ] && [ "${#placeholders[@]}" -gt 0 ]; then refs=("${placeholders[@]}"); fi
+if [ "${#refs[@]}" -eq 0 ]; then
+  for f in "$ROOT"/templates/cv-example-*.md; do
+    [ -e "$f" ] && refs+=("templates/$(basename "$f")")
+  done
+fi
 REF_LIST=""
 for r in ${refs[@]+"${refs[@]}"}; do REF_LIST+="\"$r\", "; done
 REF_LIST="${REF_LIST%, }"
 [ -z "$REF_LIST" ] && REF_LIST="(no worked examples available)"
 
-PROMPT="Tailor the CV in cv/cv.md for one job application. Work strictly by the rules in cv/AGENTS.md (read it first).
+PROMPT="Tailor the CV in data/cv.md for one job application. Work strictly by the rules in tooling/AGENTS.md (read it first).
 
 Job: $TITLE at $COMPANY
 Job description: read it from \"$JD_PATH\" (do not search for the posting online; the file is the source of truth).
 
 Steps:
-1. Read cv/AGENTS.md, then the JD, then cv/cv.md, then these worked example CVs as style references: $REF_LIST. Do not read any other files in cv/examples/.
+1. Read tooling/AGENTS.md, then the JD, then data/cv.md, then these worked example CVs as style references: $REF_LIST. Read only those as references.
 2. Before drafting anything, write out the 3-5 most important themes from the JD — its top requirements, the seniority/scope signals (org size, revenue, stage), the domain emphasis, and the terminology it repeats (to mirror where truthful). This is the brief; every choice in the next step must serve it.
-3. Write the tailored CV to \"$CV_MD\" following the conventions and tailoring scope in cv/AGENTS.md exactly, leading with the themes from step 2 (most relevant content first).
-4. Build the PDF: cv/build.sh \"$CV_MD\" \"$CV_PDF\"
+3. Write the tailored CV to \"$CV_MD\" following the conventions and tailoring scope in tooling/AGENTS.md exactly, leading with the themes from step 2 (most relevant content first).
+4. Build the PDF: tooling/build.sh \"$CV_MD\" \"$CV_PDF\"
 5. Check page count with pdfinfo; target 2 pages, tighten and rebuild if 3.
 6. Finish with a short report: the themes you committed to in step 2 and the main changes you made to serve them and why."
 

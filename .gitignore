@@ -7,22 +7,10 @@ __pycache__/
 # Claude local (machine-specific) settings
 .claude/settings.local.json
 
-# Runtime state and ALL personal job/CV data — never committed
+# ALL real/personal content lives under data/ — never committed.
+# This is the master CV (data/cv.md), job criteria (data/search-profile.md),
+# style-reference CVs (data/references/), the database, scraped JDs, tailored
+# CVs, and per-run digests. Copy the templates/ into data/ to get started:
+#   cp templates/search-profile.example.md data/search-profile.md
+#   cp templates/cv.example.md             data/cv.md
 /data/
-
-# Personal content — keep your real files here locally; the committed
-# *.example.* templates are what ships. Copy a template into place to use it:
-#   cp agent/search-profile.example.md agent/search-profile.md
-#   cp cv/cv.example.md cv/cv.md
-/prompt.md
-/agent/search-profile.md
-/cv/cv.md
-
-# Worked-example CVs the tailoring prompt reads: ship sanitized templates,
-# ignore your real ones (drop them in cv/examples/ to use them as references).
-/cv/examples/*
-!/cv/examples/example-*.md
-
-# Any stray personal CV/JD left in cv/ from earlier layouts
-/cv/cv [A-Z]*.md
-/cv/JD *.txt

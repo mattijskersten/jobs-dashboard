@@ -1,8 +1,9 @@
 # Search profile — EXAMPLE
 
-Copy this to `agent/search-profile.md` and edit it for your own search. The
-pipeline reads `agent/search-profile.md` (gitignored); this template ships so
-the repo is usable without exposing your real criteria.
+Copy this to `data/search-profile.md` and edit it for your own search:
+`cp templates/search-profile.example.md data/search-profile.md`. The pipeline
+reads `data/search-profile.md` (gitignored); this template ships so the repo is
+usable without exposing your real criteria.
 
 ## Hard filters (pass/fail — a miss is a reject, not a lower score)
 

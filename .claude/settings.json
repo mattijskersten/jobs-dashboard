@@ -14,8 +14,8 @@
       "Bash(scripts/tailor-pending.sh*)",
       "Bash(scripts/tailor-job.sh*)",
       "Bash(scripts/promote.sh*)",
-      "Bash(cv/build.sh *)",
-      "Bash(./cv/build.sh *)",
+      "Bash(tooling/build.sh *)",
+      "Bash(./tooling/build.sh *)",
       "Bash(pdfinfo *)",
       "Bash(date*)"
     ],

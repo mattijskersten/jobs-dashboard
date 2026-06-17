@@ -14,7 +14,7 @@ Usage (via scripts/ingest.sh, which supplies the right interpreter):
 --days    posted_within_days window (default 7; use 121 for backfill)
 --run-id  runs.run_id to stamp on first_seen_run_id
 
-Passes (from agent/search-profile.md): for each track, a departments pass
+Passes (from data/search-profile.md): for each track, a departments pass
 and a broad query pass, each in a local-50mi and a remote variant — always
 Senior Level + People Manager. Requests are paced at 1/s (unofficial API;
 heavier bursts have triggered Vercel bot protection).

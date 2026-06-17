@@ -33,7 +33,7 @@ set and `summary_json.source = "manual"`. Note the printed `job_id`.
 
 ## 3. Triage it
 
-Read `agent/search-profile.md`, then score this one job exactly as the
+Read `data/search-profile.md`, then score this one job exactly as the
 `/pipeline` triage does — but the full JD is already on disk, so read it from
 `jd_path` for your judgment and do **not** call `get_job_details` (there is no
 hiring.cafe id to fetch).

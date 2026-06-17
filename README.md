@@ -2,26 +2,27 @@
 
 CV-driven job search agent. A nightly pipeline searches
 [hiring.cafe](https://hiring.cafe) for senior product-leadership and
-IT-leadership roles, triages them against `agent/search-profile.md`, tailors
+IT-leadership roles, triages them against `data/search-profile.md`, tailors
 your CV for the best matches in parallel headless Claude sessions, and writes a
 standalone digest. All state lives in a SQLite database designed to back a
 future dashboard.
 
-Your personal content — your CV, job criteria, scraped JDs, tailored CVs, and
-the database — is gitignored; the repo ships `*.example.*` templates you copy
-into place (see **Setup**). Nothing personal is committed.
+The repo has three top-level content folders: **`tooling/`** (CV build assets
++ tailoring rules), **`templates/`** (sanitized `*.example.*` files that ship),
+and **`data/`** (all your real, personal content — gitignored wholesale, never
+committed). Copy the templates into `data/` to get started (see **Setup**).
 
 ## Layout
 
 | Path | Purpose |
 |---|---|
 | `hiring-cafe-mcp/` | MCP server for the unofficial hiring.cafe API (see its README) |
-| `agent/search-profile.md` | Hard filters, soft preferences, scoring guide — the triage source of truth (your copy of `search-profile.example.md`; gitignored) |
 | `.claude/commands/pipeline.md` | `/pipeline` — one full run: search → triage → tailor → report |
 | `.claude/commands/promote.md` | `/promote` — move a needs-review job to shortlisted |
-| `cv/` | CV build assets, tailoring rules (`cv/AGENTS.md`), `cv.example.md` + `examples/` templates (your real `cv.md` is gitignored) |
+| `tooling/` | CV build assets (`build.sh`, `cv-template.tex`, `cv-filter.lua`) and tailoring rules (`AGENTS.md`) |
+| `templates/` | Sanitized templates that ship: `cv.example.md`, `search-profile.example.md`, `cv-example-{1,2}.md` |
 | `scripts/` | `run-pipeline.sh` (headless entry), `ingest.sh` (mechanical search→DB), `ingest-jd.sh` (land a hand-supplied JD→DB), `tailor-pending.sh`, `tailor-job.sh`, `promote.sh`, `init-db.sh`, `backfill-job-fields.py` |
-| `data/` | Runtime state (gitignored): `jobs.db`, saved JDs (`jds/`), tailored CVs (`cvs/`), per-run digests (`reports/`) |
+| `data/` | **All personal content, gitignored:** `cv.md` (master CV), `search-profile.md` (job criteria), `references/` (style-ref CVs), `jobs.db`, `jds/`, `cvs/`, `reports/` |
 
 ## Setup
 
@@ -29,16 +30,15 @@ into place (see **Setup**). Nothing personal is committed.
 cd hiring-cafe-mcp && uv sync && cd ..
 scripts/init-db.sh
 
-# Copy the templates into place, then edit them with your own details:
-cp agent/search-profile.example.md agent/search-profile.md   # your job criteria
-cp cv/cv.example.md cv/cv.md                                  # your master CV
-# Optional: drop your own tailored CVs into cv/examples/ as style references.
+# Copy the templates into data/, then edit them with your own details:
+cp templates/search-profile.example.md data/search-profile.md   # your job criteria
+cp templates/cv.example.md             data/cv.md               # your master CV
+# Optional: drop your own tailored CVs into data/references/ as style references.
 ```
 
-Your real `agent/search-profile.md`, `cv/cv.md`, `cv/examples/*` (except the
-shipped `example-*.md`), and everything under `data/` are gitignored, so your
-CV and job criteria never enter git. Edit `scripts/ingest-jobs.py`
-(`TRACK_FILTERS` and the location variants) to match your own search.
+Everything under `data/` is gitignored, so your CV, job criteria, and scraped
+JDs never enter git. Edit `scripts/ingest-jobs.py` (`TRACK_FILTERS` and the
+location variants, or set `JOBS_SEARCH_LOCATION`) to match your own search.
 
 The hiring-cafe MCP server is registered project-scoped via `.mcp.json` and
 pre-approved in `.claude/settings.json` (`enableAllProjectMcpServers`), which
@@ -98,8 +98,8 @@ Or as a systemd user timer, point `ExecStart` at the same script.
 3. **Tailor** — every `shortlisted` job (new or promoted), capped at the 5
    highest-scoring per run. Each runs as its own headless `claude` session so
    it is independently resumable; the session id is stored on the job row.
-   Outputs are drafts for review, built to PDF via `cv/build.sh` under the
-   rules in `cv/AGENTS.md`.
+   Outputs are drafts for review, built to PDF via `tooling/build.sh` under the
+   rules in `tooling/AGENTS.md`.
 4. **Report** — digest to `data/reports/run-<id>-<date>.md`: new jobs with
    scores, what was tailored, what awaits review, errors. The hiring.cafe API
    is unofficial; an outage produces an error entry in the digest and a clean

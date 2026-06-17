@@ -13,7 +13,7 @@ wrap multi-statement changes in a transaction.
 - `scripts/init-db.sh` (idempotent).
 - Open a run row and remember its id:
   `sqlite3 data/jobs.db "INSERT INTO runs DEFAULT VALUES; SELECT last_insert_rowid();"`
-- Read `agent/search-profile.md` — it defines the hard filters, soft
+- Read `data/search-profile.md` — it defines the hard filters, soft
   preferences, scoring guide, and search hints. It is the source of truth for
   triage decisions.
 

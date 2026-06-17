@@ -50,10 +50,10 @@ operate at; the tailoring step rewrites this per job.
 **Degree, Field of Study**
 
 <!--
-Conventions (see cv/AGENTS.md for the full guide):
+Conventions (see tooling/AGENTS.md for the full guide):
 - The summary must live inside the ::: summary div, at the top of the body.
 - A standalone **bold paragraph** renders as a job title — use it only for that.
 - H3 entries: "### COMPANY, LOCATION | Date range" with the | on both sides.
 - Escape dollar signs in body text: \$1B.
-- Edit only this file (your copy at cv/cv.md) — never the template or filter.
+- Edit only your copy at data/cv.md — never the template or the layout files.
 -->
