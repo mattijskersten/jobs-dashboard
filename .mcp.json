@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "hiring-cafe": {
+      "command": "uv",
+      "args": ["--directory", "hiring-cafe-mcp", "run", "hiring-cafe-mcp"]
+    }
+  }
+}

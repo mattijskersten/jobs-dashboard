@@ -1,0 +1,27 @@
+{
+  "enableAllProjectMcpServers": true,
+  "permissions": {
+    "allow": [
+      "mcp__hiring-cafe__search_jobs",
+      "mcp__hiring-cafe__get_job_details",
+      "Read(**)",
+      "Edit(data/**)",
+      "Write(data/**)",
+      "Bash(sqlite3 *)",
+      "Bash(scripts/init-db.sh*)",
+      "Bash(scripts/ingest.sh*)",
+      "Bash(scripts/ingest-jd.sh*)",
+      "Bash(scripts/tailor-pending.sh*)",
+      "Bash(scripts/tailor-job.sh*)",
+      "Bash(scripts/promote.sh*)",
+      "Bash(cv/build.sh *)",
+      "Bash(./cv/build.sh *)",
+      "Bash(pdfinfo *)",
+      "Bash(date*)"
+    ],
+    "deny": [
+      "WebFetch",
+      "WebSearch"
+    ]
+  }
+}

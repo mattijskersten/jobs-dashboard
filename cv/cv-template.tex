@@ -1,0 +1,108 @@
+\documentclass[10pt, a4paper]{article}
+
+% --- Packages ---
+\usepackage{fontspec}
+\usepackage[top=1.8cm, bottom=1.8cm, left=2cm, right=2cm]{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{changepage}
+\usepackage{xcolor}
+
+% --- Font: Carlito (metrically identical to Calibri, the original font) ---
+\setmainfont{Carlito}
+
+% --- Accent color (deep navy) ---
+\definecolor{accent}{RGB}{30,55,100}
+
+% --- Hyperlinks ---
+\hypersetup{hidelinks, colorlinks=true, urlcolor=accent}
+
+% --- No page numbers ---
+\pagestyle{empty}
+
+% --- Global spacing ---
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{0pt}
+\setlength{\multicolsep}{2pt}
+
+% --- Bullet list styling ---
+\setlist[itemize,1]{
+  leftmargin=1.4em,
+  itemsep=2pt,
+  parsep=0pt,
+  topsep=3pt,
+  partopsep=0pt,
+  label=\textbullet
+}
+\setlist[itemize,2]{
+  leftmargin=1.8em,
+  label=\textbullet
+}
+
+% --- Definition list styling (Additional Information) ---
+\setlist[description]{
+  font=\normalfont,
+  style=sameline,
+  leftmargin=4.2cm,
+  labelwidth=3.8cm,
+  labelsep=0.4cm,
+  itemsep=1pt,
+  topsep=3pt,
+  partopsep=0pt
+}
+
+% Required by pandoc for compact lists
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% -------------------------------------------------------
+% CV commands
+% -------------------------------------------------------
+
+% Section header: centered with accent rule above (bold small caps applied by filter)
+\newcommand{\cvsection}[1]{%
+  \vspace{2pt}%
+  \noindent\textcolor{accent}{\rule{\linewidth}{0.8pt}}\\[-2pt]%
+  {\centering\large\textcolor{accent}{#1}\par}%
+  \vspace{2pt}%
+}
+
+% Company / institution row: bold left + bold date right
+\newcommand{\cventry}[2]{%
+  \vspace{8pt}%
+  \noindent\textbf{#1}\hfill\textbf{#2}\par%
+}
+
+% Role / job title: bold italic (with breathing room before bullets)
+\newcommand{\cvjobtitle}[1]{%
+  \noindent\textit{\textbf{#1}}\par%
+  \vspace{2pt}%
+}
+
+% Sub-role under a grouped company entry: title left (bold italic) + date right (italic)
+\newcommand{\cvsubrole}[2]{%
+  \vspace{5pt}%
+  \noindent\textit{\textbf{#1}}\hfill\textit{#2}\par%
+  \vspace{2pt}%
+}
+
+% -------------------------------------------------------
+\begin{document}
+
+% --- Header ---
+{\centering
+  {\fontsize{13pt}{15.6pt}\selectfont $name$}\par
+  \vspace{3pt}
+  {\small\textcolor{accent}{$headline$}}\par
+  \vspace{5pt}
+  $city$ ~·~ $phone$ ~·~ \href{mailto:$email$}{$email$} ~·~ \href{https://$linkedin$}{$linkedin$}\par
+  \vspace{2pt}
+  {\small\textit{$languages$}}\par
+}
+\vspace{4pt}
+% --- Body (populated by pandoc from cv.md) ---
+$body$
+
+\end{document}

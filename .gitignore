@@ -1,0 +1,28 @@
+# Python / virtualenv / build artifacts
+.venv/
+__pycache__/
+*.py[co]
+*.pdf
+
+# Claude local (machine-specific) settings
+.claude/settings.local.json
+
+# Runtime state and ALL personal job/CV data — never committed
+/data/
+
+# Personal content — keep your real files here locally; the committed
+# *.example.* templates are what ships. Copy a template into place to use it:
+#   cp agent/search-profile.example.md agent/search-profile.md
+#   cp cv/cv.example.md cv/cv.md
+/prompt.md
+/agent/search-profile.md
+/cv/cv.md
+
+# Worked-example CVs the tailoring prompt reads: ship sanitized templates,
+# ignore your real ones (drop them in cv/examples/ to use them as references).
+/cv/examples/*
+!/cv/examples/example-*.md
+
+# Any stray personal CV/JD left in cv/ from earlier layouts
+/cv/cv [A-Z]*.md
+/cv/JD *.txt
