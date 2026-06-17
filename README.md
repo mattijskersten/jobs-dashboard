@@ -7,8 +7,8 @@ your CV for the best matches in parallel headless Claude sessions, and writes a
 standalone digest. All state lives in a SQLite database designed to back a
 future dashboard.
 
-The repo has three top-level content folders: **`tooling/`** (CV build assets
-+ tailoring rules), **`templates/`** (sanitized `*.example.*` files that ship),
+The repo has three top-level content folders: **`tooling/`** (CV build assets +
+tailoring rules), **`templates/`** (sanitized `*.example.*` files that ship),
 and **`data/`** (all your real, personal content — gitignored wholesale, never
 committed). Copy the templates into `data/` to get started (see **Setup**).
 
