@@ -32,6 +32,10 @@ Use `--days 121` (the site's full window) when the database is empty, the
 last finished run is more than a week old, or the run was invoked with a
 backfill instruction.
 
+This step searches **hiring.cafe only**. LinkedIn is collected on-demand via
+`/ingest-linkedin` (browser-scraped — kept deliberate), never from here. Any
+LinkedIn `seen` rows already in the queue are still triaged in step 2.
+
 Capture its stdout for the digest. Exit code 2 means partial ingest (some
 passes failed) — continue with what was inserted and report the errors in
 the digest. If it inserted nothing and reported errors, skip to step 3
@@ -48,10 +52,20 @@ run, not just this run's inserts):
 sqlite3 -json data/jobs.db "SELECT job_id, company, title, track, posted_date, summary_json FROM jobs WHERE status = 'seen';"
 ```
 
-A row whose `summary_json.source == "manual"` is a hand-supplied JD (landed by
-`scripts/ingest-jd.sh`): its full description is already on disk at `jd_path`
-and it has **no** hiring.cafe id. Score it from that file and never call
-`get_job_details` for it; its JD is already saved, so skip step 3's fetch/save.
+Rows carry a `summary_json.source` that decides which details tool to use:
+
+- `source == "manual"` — a hand-supplied JD (landed by `scripts/ingest-jd.sh`):
+  its full description is already on disk at `jd_path` and it has **no**
+  hiring.cafe id. Score it from that file, never call any `get_job_details`, and
+  skip step 3's fetch/save (already saved).
+- `source == "linkedin"` — landed by `/ingest-linkedin`, summary-only, with a
+  numeric `summary_json.linkedin_id` and **no** hiring.cafe id. When details are
+  needed (step 2/3), call `mcp__linkedin__get_job_details(linkedin_id)` —
+  **never** the hiring.cafe one. Be conservative: fetch LinkedIn details
+  **sequentially** (no parallel calls) and **cap at 8 per run**. If a ≥6 keeper
+  is past the cap, leave it `needs-review` with summary-only and note in the
+  digest that its JD fetch was deferred (a later `/promote` or run will fetch it).
+- otherwise (hiring.cafe) — use `mcp__hiring-cafe__get_job_details`.
 
 For each `seen` row, judge from its `summary_json` (location,
 workplace_type, seniority, role_type, salary, requirements_summary…):

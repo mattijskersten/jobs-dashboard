@@ -71,11 +71,18 @@ Or as a systemd user timer, point `ExecStart` at the same script.
 - `/promote <job_id|company>` (or `scripts/promote.sh <job_id>`) moves a
   needs-review job to shortlisted; the next run tailors it. Add `reject` to
   reject instead. `scripts/tailor-pending.sh` tailors immediately.
-- **Ingest a JD you found elsewhere** (LinkedIn, a referral, a direct link)
-  with `/ingest-jd <path-to-jd-file> [company] [title]`: it saves the JD,
-  triages it against the profile, and tailors immediately if it scores ≥ 8 —
-  no hiring.cafe search involved. To only land it in the funnel for the next
-  run to triage, call `scripts/ingest-jd.sh --file … --company … --title …`.
+- **Ingest a JD you found elsewhere** (a referral, a direct link) with
+  `/ingest-jd <path-to-jd-file> [company] [title]`: it saves the JD, triages it
+  against the profile, and tailors immediately if it scores ≥ 8 — no hiring.cafe
+  search involved. To only land it in the funnel for the next run to triage,
+  call `scripts/ingest-jd.sh --file … --company … --title …`.
+- **Search LinkedIn** with `/ingest-linkedin`: runs a small, paced set of
+  searches via the `linkedin` MCP and lands new roles as `seen` rows
+  (`source:"linkedin"`); the next `/pipeline` triages, fetches JDs, and tailors
+  them. On-demand only — LinkedIn is browser-scraped, so use is deliberate and
+  conservative (never run in the nightly job). It needs a one-time logged-in
+  cookie: run the `linkedin-scraper-mcp` login flow once if a search returns an
+  auth error.
 - **Fine-tune a tailored CV** by resuming its dedicated session:
 
   ```sh

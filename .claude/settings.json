@@ -4,6 +4,8 @@
     "allow": [
       "mcp__hiring-cafe__search_jobs",
       "mcp__hiring-cafe__get_job_details",
+      "mcp__linkedin__search_jobs",
+      "mcp__linkedin__get_job_details",
       "Read(**)",
       "Edit(data/**)",
       "Write(data/**)",
@@ -21,7 +23,8 @@
     ],
     "deny": [
       "WebFetch",
-      "WebSearch"
+      "WebSearch",
+      "mcp__linkedin__connect_with_person"
     ]
   }
 }
