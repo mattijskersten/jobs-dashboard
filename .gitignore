@@ -13,4 +13,7 @@ __pycache__/
 # CVs, and per-run digests. Copy the templates/ into data/ to get started:
 #   cp templates/search-profile.example.md data/search-profile.md
 #   cp templates/cv.example.md             data/cv.md
-/data/
+# Ignore the contents (not the dir itself) so the one tracked placeholder below
+# can ship the empty folder.
+/data/*
+!/data/README.md
