@@ -36,13 +36,28 @@ if [ -n "$CANDIDATE" ]; then BASE="cv $CANDIDATE $LABEL"; else BASE="cv $LABEL";
 CV_MD="data/cvs/$BASE.md"
 CV_PDF="data/cvs/$BASE.pdf"
 
+# Worked-example CVs to feed the model as style references. Prefer your real
+# ones in cv/examples/; the shipped example-*.md are sanitized placeholders for
+# public clones and are skipped whenever any real example is present.
+refs=(); placeholders=()
+for f in "$ROOT"/cv/examples/*.md; do
+  [ -e "$f" ] || continue
+  b=$(basename "$f")
+  if [[ "$b" == example-*.md ]]; then placeholders+=("cv/examples/$b"); else refs+=("cv/examples/$b"); fi
+done
+if [ "${#refs[@]}" -eq 0 ] && [ "${#placeholders[@]}" -gt 0 ]; then refs=("${placeholders[@]}"); fi
+REF_LIST=""
+for r in ${refs[@]+"${refs[@]}"}; do REF_LIST+="\"$r\", "; done
+REF_LIST="${REF_LIST%, }"
+[ -z "$REF_LIST" ] && REF_LIST="(no worked examples available)"
+
 PROMPT="Tailor the CV in cv/cv.md for one job application. Work strictly by the rules in cv/AGENTS.md (read it first).
 
 Job: $TITLE at $COMPANY
 Job description: read it from \"$JD_PATH\" (do not search for the posting online; the file is the source of truth).
 
 Steps:
-1. Read cv/AGENTS.md, then the JD, then cv/cv.md, then the worked example CV(s) in cv/examples/ (style references).
+1. Read cv/AGENTS.md, then the JD, then cv/cv.md, then these worked example CVs as style references: $REF_LIST. Do not read any other files in cv/examples/.
 2. Before drafting anything, write out the 3-5 most important themes from the JD — its top requirements, the seniority/scope signals (org size, revenue, stage), the domain emphasis, and the terminology it repeats (to mirror where truthful). This is the brief; every choice in the next step must serve it.
 3. Write the tailored CV to \"$CV_MD\" following the conventions and tailoring scope in cv/AGENTS.md exactly, leading with the themes from step 2 (most relevant content first).
 4. Build the PDF: cv/build.sh \"$CV_MD\" \"$CV_PDF\"

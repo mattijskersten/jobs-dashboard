@@ -37,7 +37,7 @@ Requires: `pandoc`, `xelatex` (texlive-xetex), Carlito font (pre-installed).
 |---|---|
 | `cv.md` | **Master CV content** — the base for every tailored variant (your copy of `cv.example.md`; gitignored) |
 | `cv.example.md` | Sanitized master-CV template that ships in the repo |
-| `examples/*.md` | Worked examples of tailored CVs, read as style references (`example-*.md` ship; drop your real ones here, gitignored) |
+| `examples/*.md` | Worked examples of tailored CVs, read as style references. Drop your real ones here (gitignored); the shipped `example-*.md` placeholders are skipped by `tailor-job.sh` whenever any real example is present, and used only as a fallback on a fresh clone. |
 | `cv-template.tex` / `cv-filter.lua` | Layout — do not edit for content changes |
 | `build.sh` | Compile command |
 
