@@ -1,8 +1,8 @@
 # jobs-dashboard
 
 CV-driven job search agent. A nightly pipeline searches
-[hiring.cafe](https://hiring.cafe) for senior product-leadership and
-IT-leadership roles, triages them against `data/search-profile.md`, tailors
+[hiring.cafe](https://hiring.cafe) for senior roles matching the two tracks you
+define in `data/search-profile.md`, triages them against that profile, tailors
 your CV for the best matches in parallel headless Claude sessions, and writes a
 standalone digest. All state lives in a SQLite database designed to back a
 future dashboard.
@@ -106,8 +106,8 @@ in model context. Three sources, each its own command:
 
 - **hiring.cafe** (`/ingest-hiringcafe`, run by the nightly script) —
   `scripts/ingest.sh` mechanically runs eight passes (2 tracks ×
-  {departments, broad query} × {local-50mi, remote}, always Senior Level +
-  People Manager), paginating to exhaustion.
+  {departments, broad query} × {local-50mi, remote}, filtered to your target
+  seniority and role type), paginating to exhaustion.
 - **LinkedIn** (`/ingest-linkedin`, on-demand) — a small, paced set of searches.
 - **Manual** (`/ingest-jd`) — one hand-supplied JD.
 
