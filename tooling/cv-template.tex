@@ -10,6 +10,7 @@
 \usepackage{graphicx}
 \usepackage{changepage}
 \usepackage{xcolor}
+\usepackage{fontawesome5}  % brand/contact icons in the header
 
 % --- Font: Carlito (metrically identical to Calibri, the original font) ---
 \setmainfont{Carlito}
@@ -92,16 +93,22 @@
 \begin{document}
 
 % --- Header ---
+% Navy contact icons; full URLs kept as visible text so ATS parsers read them.
 {\centering
-  {\fontsize{13pt}{15.6pt}\selectfont $name$}\par
-  \vspace{3pt}
-  {\small\textcolor{accent}{$headline$}}\par
+  {\fontsize{19pt}{21pt}\selectfont\textcolor{accent}{$name$}}\par
   \vspace{5pt}
-  $city$ ~·~ $phone$ ~·~ \href{mailto:$email$}{$email$} ~·~ \href{https://$linkedin$}{$linkedin$}\par
-  \vspace{2pt}
-  {\small\textit{$languages$}}\par
+  {\normalsize\textcolor{accent}{$headline$}}\par
+  \vspace{6pt}
+  {\footnotesize
+    \textcolor{accent}{\faMapMarker*}~$city$\enspace
+    \textcolor{accent}{\faPhone*}~$phone$\enspace
+    \href{mailto:$email$}{\textcolor{accent}{\faEnvelope}~$email$}\enspace
+    \href{https://$linkedin$}{\textcolor{accent}{\faLinkedin}~$linkedin$}\enspace
+    \href{https://$github$}{\textcolor{accent}{\faGithub}~$github$}}\par
+  \vspace{3pt}
+  {\footnotesize\textit{$languages$}}\par
 }
-\vspace{4pt}
+\vspace{6pt}
 % --- Body (populated by pandoc from cv.md) ---
 $body$
 

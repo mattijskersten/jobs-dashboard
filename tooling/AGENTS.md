@@ -135,10 +135,13 @@ Hard limit — this never overrides the no-fabrication rule:
 ### YAML front matter
 
 ```yaml
-name:      Full name (rendered as bold small caps heading)
+name:      Full name (rendered as bold small caps heading, navy accent)
+headline:  One-line positioning tagline under the name (navy accent)
 phone:     Phone number
-city:      City, country (centered in contact row)
+city:      City, country (first item in contact row)
 email:     Email address
+linkedin:  LinkedIn URL without scheme, e.g. linkedin.com/in/your-handle
+github:    GitHub URL without scheme, e.g. github.com/your-handle
 languages: Displayed in italic below contact row (use · as separator)
 ```
 

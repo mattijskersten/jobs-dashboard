@@ -1,9 +1,11 @@
 ---
 name: Alex Doe
+headline: "Your Positioning Line · Domain · Signature Strength"
 phone: "+00 000 000 000"
 city: "Your City, Country"
 email: you@example.com
 linkedin: "linkedin.com/in/your-handle"
+github: "github.com/your-handle"
 languages: "English (native) · Other (working)"
 ---
 
