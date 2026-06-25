@@ -42,7 +42,7 @@ hiring.cafe id to fetch).
    search profile). A miss → `status='rejected'`, score 1, one-line rationale
    naming the failed filter.
 2. Otherwise score 1–10 against the profile's soft preferences. Set `track`
-   (A = product leadership, B = IT leadership) if not already set.
+   (A or B, per the tracks defined in your search profile) if not already set.
 3. Update the row (escape `'` as `''`): set score, rationale, updated_at, and
    `status` = `shortlisted` (≥8) / `needs-review` (6–7) / `rejected` (≤5).
 

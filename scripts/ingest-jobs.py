@@ -34,6 +34,14 @@ sys.path.insert(0, str(ROOT / "hiring-cafe-mcp" / "src"))
 from hiring_cafe_mcp.api import HiringCafeClient, HiringCafeError  # noqa: E402
 from hiring_cafe_mcp.server import _dedupe, _summarize_hit  # noqa: E402
 
+# TODO(#1): SEARCH_LOCATION and TRACK_FILTERS below are the live search
+# config but are hardcoded here (the script does not read data/search-profile.md).
+# To make the repo fully generic, load tracks + location from a gitignored
+# data/ config (e.g. data/search-config.yaml) with a shipped templates/ example,
+# then remove these personal defaults. Behaviour-affecting — validate with a real
+# ingest run after changing. (The command files and compare-linkedin.py were
+# already genericized; this is the remaining piece.)
+
 # Your search anchor location — override with JOBS_SEARCH_LOCATION, or edit here.
 SEARCH_LOCATION = os.environ.get("JOBS_SEARCH_LOCATION", "Berlin, Germany")
 

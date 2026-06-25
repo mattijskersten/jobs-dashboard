@@ -15,17 +15,18 @@ will bot-flag on heavy use. You only collect here; triage happens later in
   auth error, stop and tell the user to run the one-time login
   (`uvx linkedin-scraper-mcp@latest` login flow); do not retry in a loop.
 - Read `data/search-profile.md` for the home location and the two tracks
-  (A = product leadership, B = IT leadership). If it is missing, stop and tell
+  (A and B, as defined there). If it is missing, stop and tell
   the user to create it from `templates/search-profile.example.md`.
 
 ## 1. Search (sequential + paced — hard rules)
 
 Run a small fixed set of **~4 searches**, derived from the profile's tracks and
-location. Mirror this validated set (adapt the location to the profile):
+location. Mirror this validated pattern (fill keywords and location from the
+profile — OR-join each track's qualifying titles):
 
 | Track | keywords | location | work_type |
 |---|---|---|---|
-| A | `<track-A titles, OR-joined>` | `<home city>` | — |
+| A | `<track-A titles from your profile, OR-joined>` | `<home city>` | — |
 | A | `<track-A titles, OR-joined>` | `<country>` | `remote` |
 | B | `<track-B titles, OR-joined>` | `<home city>` | — |
 | B | `<track-B titles, OR-joined>` | `<country>` | `remote` |
