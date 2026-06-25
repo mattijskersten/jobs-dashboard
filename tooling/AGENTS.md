@@ -38,7 +38,7 @@ Requires: `pandoc`, `xelatex` (texlive-xetex), Carlito font (pre-installed).
 | `data/cv.md` | **Master CV content** — the base for every tailored variant (your copy of `templates/cv.example.md`; gitignored) |
 | `templates/cv.example.md` | Sanitized master-CV template that ships in the repo |
 | `templates/cv-example-*.md` | Sanitized worked-example CVs that ship as a fallback style reference for fresh clones |
-| `data/references/*.md` | Your real worked-example CVs, read as style references (gitignored). `tailor-job.sh` uses these when present and falls back to `templates/cv-example-*.md` otherwise. |
+| `data/references/*.md` | Your real worked-example CVs, read as **calibrated exemplars — authoritative for phrasing and claim scope** (gitignored). `tailor-job.sh` uses these when present and falls back to `templates/cv-example-*.md` otherwise. |
 | `tooling/cv-template.tex` / `tooling/cv-filter.lua` | Layout — do not edit for content changes |
 | `tooling/build.sh` | Compile command |
 
@@ -55,7 +55,19 @@ Given a JD file:
 
 1. Read the JD in full, then `data/cv.md` (for structure, section order, and
    formatting conventions) and the worked example CVs (in `data/references/`,
-   or `templates/cv-example-*.md`) for richer background and style references.
+   or `templates/cv-example-*.md`) for richer background and as **calibrated
+   exemplars**. Treat the reference CVs as authoritative above `cv.md` for
+   *phrasing and claim scope*: they are later, hand-tuned versions, so where a
+   reference and `cv.md` state the same fact differently (e.g. "directed product
+   *for* a 200+ FTE org" vs "led"; keeping the most recent role at the top),
+   follow the reference. Use `cv.md` as the fact base for content the references
+   don't cover. Before drafting, diff the references against `cv.md` and note
+   where they deliberately soften, reframe, or retain a claim — carry those
+   choices forward unless the JD demands otherwise.
+
+   **Authority order:** references > `cv.md` for phrasing and claim scope;
+   `cv.md` > references for completeness of older roles (never drop a role just
+   because a reference omits it — see Tailoring scope).
 2. **Write down the 3–5 most important themes/requirements** before drafting:
    seniority and scope signals (org size, revenue, company stage), domain
    emphasis, and terminology the JD repeats (mirror it per "Keyword mirroring"
@@ -67,7 +79,16 @@ Given a JD file:
 5. Check the page count: `pdfinfo "….pdf" | grep Pages`. Target is 2 pages. If
    it spills to 3, tighten bullets (cut the least relevant, shorten phrasing)
    and rebuild until it fits. If it shrinks to 1, that's fine — don't pad.
-6. Report the themes committed to in step 2 and the main changes made to serve
+   Then skim the rendered PDF for layout/escaping glitches that `pdfinfo`
+   can't see — unescaped `$` (must be `\$`), a broken `|` H3 heading, a
+   standalone `**bold**` line mis-rendering as a job title, or a bullet
+   swallowed by the template. Fix and rebuild if any appear.
+6. **Keyword-coverage check.** Map the JD's most-repeated must-have terms to
+   where each lands in the CV (summary / Core Competencies / which role). Flag
+   any high-frequency term that's absent and why — genuinely lacking (leave it
+   out, per the no-fabrication rule) vs. missed (add it where truthful and
+   rebuild).
+7. Report the themes committed to in step 2 and the main changes made to serve
    them and why.
 
 ### Keyword mirroring (ATS)
