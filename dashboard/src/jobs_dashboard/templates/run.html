@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}run {{ run.run_id }} · digest{% endblock %}
+
+{% block content %}
+<a class="backlink" href="{{ url_for('index') }}">← back to board</a>
+<article class="rundetail">
+  <p class="eyebrow" style="font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:0 0 4px;">pipeline run</p>
+  <h1>Run {{ run.run_id }}</h1>
+  <p class="muted">
+    started {{ run.started_at }}{% if run.finished_at %} · finished {{ run.finished_at }}{% endif %}
+  </p>
+  <div class="badges">
+    <span class="badge">{{ run.jobs_seen }} seen</span>
+    <span class="badge">{{ run.shortlisted }} shortlisted</span>
+    <span class="badge">{{ run.needs_review }} needs-review</span>
+    <span class="badge">{{ run.rejected }} rejected</span>
+    <span class="badge">{{ run.tailored }} tailored</span>
+  </div>
+
+  {% if run.errors %}
+  <div class="run-errors">
+    <strong>Errors:</strong> {{ run.errors }}
+  </div>
+  {% endif %}
+
+  {% if digest_html %}
+    <div class="digest">{{ digest_html | safe }}</div>
+  {% elif not run.finished_at %}
+    <p class="muted">This run didn't finish (no <code>finished_at</code>), so it
+      never wrote a digest — typically an interrupted or aborted run.</p>
+  {% else %}
+    <p class="muted">No digest file found for this run
+      {%- if run.report_path %} (expected at <code>{{ run.report_path }}</code>){% endif %}.</p>
+  {% endif %}
+</article>
+{% endblock %}

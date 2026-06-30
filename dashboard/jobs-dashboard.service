@@ -1,0 +1,25 @@
+# systemd *user* unit for the jobs dashboard (optional, always-on).
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp dashboard/jobs-dashboard.service ~/.config/systemd/user/
+#   # edit WorkingDirectory below to your repo path, then:
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now jobs-dashboard
+#   loginctl enable-linger "$USER"   # keep it running when you're logged out
+#
+# Reach it from your phone over Tailscale at http://<tailscale-name>:8765
+[Unit]
+Description=jobs-dashboard web UI
+After=network-online.target
+
+[Service]
+Type=exec
+WorkingDirectory=%h/projects/jobs-dashboard
+ExecStart=%h/projects/jobs-dashboard/scripts/dashboard.sh
+Restart=on-failure
+RestartSec=5
+# Tailoring spawns `claude`, which needs the user's PATH/credentials.
+Environment=JOBS_DASHBOARD_PORT=8765
+
+[Install]
+WantedBy=default.target

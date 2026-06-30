@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}pipeline · overview{% endblock %}
+
+{% macro scorechip(score) %}
+  {%- if score is none -%}
+    <span class="score chip-score none">–</span>
+  {%- else -%}
+    <span class="score chip-score sc-{{ 'good' if score >= 8 else 'mid' if score >= 6 else 'bad' }}">{{ score }}</span>
+  {%- endif -%}
+{% endmacro %}
+
+{% set active = filters.status.split(',') if filters.status else [] %}
+
+{% block content %}
+{# preserve non-status filters while toggling stages #}
+{%- set extra %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.track %}&track={{ filters.track }}{% endif %}{% if filters.min_score != '' %}&min_score={{ filters.min_score }}{% endif %}{% endset -%}
+
+{% macro stage_href(st) -%}
+  {%- set newset = (active | reject('equalto', st) | list) if st in active else (active + [st]) -%}
+  {{ url_for('index') }}?status={{ newset | join(',') }}{{ extra }}
+{%- endmacro %}
+
+<section class="board">
+  <p class="eyebrow">live funnel · tap stages to filter (multi-select)</p>
+  <div class="ribbon">
+    {% for st, label in [('needs-review','review'), ('shortlisted','shortlist'), ('tailored','tailored'), ('applied','applied')] %}
+      <a class="stage {% if st in active %}active{% endif %}" href="{{ stage_href(st) }}"
+         aria-pressed="{{ 'true' if st in active else 'false' }}">
+        <span class="stage-n">{{ overview.status_counts.get(st, 0) }}</span>
+        <span class="stage-l">{{ label }}</span>
+      </a>
+      {% if not loop.last %}<span class="flow" aria-hidden="true">→</span>{% endif %}
+    {% endfor %}
+  </div>
+  <div class="offramp">
+    <a class="stage {% if 'rejected' in active %}active{% endif %}" href="{{ stage_href('rejected') }}"
+       aria-pressed="{{ 'true' if 'rejected' in active else 'false' }}">
+      <span class="stage-n">{{ overview.status_counts.get('rejected', 0) }}</span><span class="stage-l">rejected</span>
+    </a>
+    <a class="stage starfilter {% if filters.starred %}active{% endif %}"
+       href="{% if filters.starred %}{{ url_for('index') }}?status={{ filters.status }}{{ extra }}{% else %}{{ url_for('index') }}?status={{ filters.status }}&starred=1{{ extra }}{% endif %}"
+       aria-pressed="{{ 'true' if filters.starred else 'false' }}">
+      <span class="stage-n">{{ overview.starred }}</span><span class="stage-l">★ starred</span>
+    </a>
+    <span class="spring"></span>
+    <a class="stage {% if not filters.status and not filters.starred %}active{% endif %}" href="{{ url_for('index') }}?status={{ extra }}">
+      <span class="stage-n">{{ overview.total }}</span><span class="stage-l">all</span>
+    </a>
+  </div>
+  <p class="sources">
+    {% for s in ['hiringcafe','linkedin','manual'] %}<a href="{{ url_for('index') }}?status=&amp;source={{ s }}">{{ overview.source_counts.get(s, 0) }} {{ s }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+  </p>
+</section>
+
+<section class="actions-bar">
+  <div class="action-pair">
+    <form method="post" action="{{ url_for('ingest') }}" data-task="ingest">
+      <input type="hidden" name="days" value="7">
+      <button type="submit" class="btn primary" {% if tasks.get('ingest') and tasks['ingest'].status == 'running' %}disabled{% endif %}>
+        {% if tasks.get('ingest') and tasks['ingest'].status == 'running' %}Searching hiring.cafe…{% else %}Search hiring.cafe{% endif %}
+      </button>
+    </form>
+    <span class="task-note" data-task-note="ingest">
+      {% if tasks.get('ingest') %}<a href="#" data-log="{{ tasks['ingest'].log }}">{{ tasks['ingest'].status }}</a>{% endif %}
+    </span>
+  </div>
+  <div class="action-pair">
+    <form method="post" action="{{ url_for('ingest_linkedin') }}" data-task="linkedin"
+          onsubmit="return confirm('Run a LinkedIn search? It drives a real browser session — use it deliberately, not repeatedly.');">
+      <button type="submit" class="btn" {% if tasks.get('linkedin') and tasks['linkedin'].status == 'running' %}disabled{% endif %}>
+        {% if tasks.get('linkedin') and tasks['linkedin'].status == 'running' %}Searching LinkedIn…{% else %}Search LinkedIn{% endif %}
+      </button>
+    </form>
+    <span class="task-note" data-task-note="linkedin">
+      {% if tasks.get('linkedin') %}<a href="#" data-log="{{ tasks['linkedin'].log }}">{{ tasks['linkedin'].status }}</a>{% endif %}
+    </span>
+  </div>
+</section>
+
+<details class="filters">
+  <summary>Filter &amp; search</summary>
+  <form class="filterform" method="get" action="{{ url_for('index') }}">
+    <input type="text" name="status" value="{{ filters.status }}" placeholder="status — e.g. needs-review,shortlisted (blank = all)">
+    <div class="filter-row">
+      <select name="source">
+        <option value="" {% if not filters.source %}selected{% endif %}>any source</option>
+        {% for s in ['hiringcafe','linkedin','manual'] %}
+          <option value="{{ s }}" {% if filters.source == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+      <select name="track">
+        <option value="" {% if not filters.track %}selected{% endif %}>any track</option>
+        <option value="A" {% if filters.track == 'A' %}selected{% endif %}>track A</option>
+        <option value="B" {% if filters.track == 'B' %}selected{% endif %}>track B</option>
+      </select>
+      <input type="number" name="min_score" value="{{ filters.min_score }}" placeholder="min score" min="1" max="10">
+      <button type="submit" class="btn">Apply</button>
+    </div>
+  </form>
+</details>
+
+<details class="runs">
+  <summary>Recent runs</summary>
+  <table>
+    <thead><tr><th>#</th><th>started</th><th>seen</th><th>short</th><th>rev</th><th>rej</th><th>tail</th></tr></thead>
+    <tbody>
+    {% for r in overview.runs %}
+      <tr {% if r.errors %}class="has-err"{% endif %} onclick="location.href='{{ url_for('run_digest', run_id=r.run_id) }}'">
+        <td><a href="{{ url_for('run_digest', run_id=r.run_id) }}">{{ r.run_id }}</a></td>
+        <td>{{ r.started_at[5:16] }}</td>
+        <td>{{ r.jobs_seen }}</td><td>{{ r.shortlisted }}</td>
+        <td>{{ r.needs_review }}</td><td>{{ r.rejected }}</td><td>{{ r.tailored }}</td>
+      </tr>
+      {% if r.errors %}<tr class="err-row"><td colspan="7">⚠ {{ r.errors }}</td></tr>{% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+</details>
+
+<section class="joblist">
+  <div class="list-head">
+    <span class="count">{{ jobs|length }} job{{ '' if jobs|length == 1 else 's' }}{% if filters.status %} · {{ filters.status }}{% endif %}</span>
+    {% if filters.status or filters.source or filters.track or filters.min_score != '' %}
+      <a class="clear" href="{{ url_for('index') }}">reset</a>
+    {% endif %}
+  </div>
+
+  {% for job in jobs %}
+    <div class="jobcard {% if job.starred %}is-starred{% endif %}">
+      {{ scorechip(job.score) }}
+      <div class="body">
+        <div class="jobcard-head">
+          <a class="company stretch" href="{{ url_for('job_detail', job_id=job.job_id) }}">{{ job.company }}</a>
+          <span class="badge st-{{ job.status }}">{{ job.status }}</span>
+        </div>
+        <div class="title">{{ job.title }}</div>
+        <div class="meta">
+          <span class="src-tag">{{ job.source }}</span>
+          {% if job.track %}<span class="tag-track" data-t="{{ job.track }}">track {{ job.track }}</span>{% endif %}
+          {% if job.posted_date %}<span>posted <span class="on">{{ job.posted_date }}</span></span>{% endif %}
+        </div>
+        {% if job.rationale %}<div class="rationale">{{ job.rationale }}</div>{% endif %}
+      </div>
+      <form class="starbtn" method="post" action="{{ url_for('job_star', job_id=job.job_id) }}">
+        <input type="hidden" name="next" value="{{ request.url }}">
+        <button type="submit" aria-pressed="{{ 'true' if job.starred else 'false' }}"
+                aria-label="{{ 'Unstar' if job.starred else 'Star' }} {{ job.company }}">{{ '★' if job.starred else '☆' }}</button>
+      </form>
+    </div>
+  {% else %}
+    <div class="empty">
+      <strong>Nothing here.</strong>
+      Adjust the filter above, or run a search to bring new roles into the funnel.
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

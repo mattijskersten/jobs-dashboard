@@ -127,8 +127,8 @@ def main() -> None:
         for jid, (track, s) in new.items():
             db.execute(
                 "INSERT OR IGNORE INTO jobs (job_id, company, title, url,"
-                " apply_url, track, status, posted_date, summary_json,"
-                " first_seen_run_id) VALUES (?,?,?,?,?,?,'seen',?,?,?)",
+                " apply_url, track, source, status, posted_date, summary_json,"
+                " first_seen_run_id) VALUES (?,?,?,?,?,?,'hiringcafe','seen',?,?,?)",
                 (
                     jid,
                     s.get("company") or "(unknown)",
