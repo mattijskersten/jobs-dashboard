@@ -125,6 +125,34 @@ its own install notes at the top).
 > **never expose it to the public internet.** Ingest/tailor actions run under the
 > same `flock` on `data/.pipeline.lock` as the nightly job, so they can't race it.
 
+### Refine a tailored CV from the browser (Remote Control)
+
+A tailored or applied job's detail page has a **Refine (Remote)** panel. Tapping it
+launches a [Claude Code Remote Control](https://code.claude.com/docs/en/remote-control)
+session **resumed on that job's stored `tailoring_session_id`** — i.e. the *same*
+interactive Claude session that originally wrote the CV, with all its context (the JD,
+your master CV, the style references, the themes it committed to). The page then shows an
+**Open session** link and a **QR code**; open either on your laptop or phone and keep
+fine-tuning the CV interactively, from any browser or the Claude mobile app. The CV `.md`
+/ `.pdf` are overwritten in place, so the inline **Tailored CV** preview reflects your
+edits. **End session** stops it (it also self-times-out after ~10 min offline).
+
+Requirements: `claude` ≥ 2.1.51 authenticated with a **claude.ai subscription** login
+(run `/status` to confirm — Remote Control rejects API-key and `setup-token` logins).
+The session is a long-lived local `claude` process the dashboard launches under a PTY;
+like everything else here it must stay behind Tailscale. Optionally enable mobile push
+(`/config` → *Push when Claude decides*) so a finished refine turn pings your phone.
+
+> **Ending a session leaves a stale entry in Claude Code Web.** Remote Control runs the
+> session *locally* — the web/app view is just a window into it — so **End session** (and
+> the ~10-min offline timeout) only kills the local `claude` process; the dashboard can't
+> reach into claude.ai to tidy its session list. The now-unresponsive entry there is
+> harmless: **Archive** it from the web UI to declutter (Archive is reversible; Delete is
+> not, and neither is needed). Your state is never lost — the conversation lives in the
+> local session transcript under `~/.claude/projects/…/<id>.jsonl`, so
+> `claude --resume <tailoring_session_id>` (or launching Refine again) reopens it with
+> full history regardless of what you do to the web-side entry.
+
 State columns it relies on: every job row carries a non-null `source`
 (`hiringcafe` | `linkedin` | `manual`) and a `starred` flag (0/1); run
 `scripts/init-db.sh` to migrate an older DB (it adds both columns idempotently)

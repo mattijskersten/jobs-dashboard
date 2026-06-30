@@ -366,6 +366,33 @@ details.panel .panel-body { padding: 0 14px 14px; }
 .digest th, .digest td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; }
 .digest th { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 
+/* ---------- Refine (Remote Control) ---------- */
+.refine {
+  margin: 16px 0; border: 1px solid var(--line-soft);
+  border-radius: var(--radius); background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--brass-glow);
+}
+.refine .panel-body {
+  padding: 14px; display: flex; flex-direction: column;
+  gap: 10px; align-items: flex-start;
+}
+.refine .eyebrow {
+  display: block; font-size: 10px; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--brass-dim);
+}
+.refine p { margin: 0; }
+.refine form { width: 100%; }
+.refine form .btn { width: 100%; }
+.small { font-size: 12.5px; line-height: 1.5; }
+.rc-live { display: flex; flex-direction: column; gap: 11px; align-items: center; width: 100%; }
+.rc-live .btn { width: 100%; }
+.rc-live .small { text-align: center; }
+.rc-qr {
+  width: 176px; height: 176px; background: #fff;
+  border-radius: var(--radius-sm); display: block;
+}
+.rc-launching { font-family: var(--mono); font-size: 13px; color: var(--brass); }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }

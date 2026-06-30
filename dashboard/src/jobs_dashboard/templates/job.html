@@ -40,6 +40,43 @@
     {% if has_cv %}<a class="btn primary" href="{{ url_for('job_cv', job_id=job.job_id) }}" target="_blank" rel="noopener">Tailored CV ↗</a>{% endif %}
   </div>
 
+  {% if job.status in ['tailored', 'applied'] %}
+  <section class="panel refine" data-refine
+           data-rc-status="{{ session.status if session else '' }}">
+    <div class="panel-body">
+      <span class="eyebrow">Refine CV</span>
+      <p class="muted small">Resume the original tailoring session to fine-tune this CV — continue here, on your phone, or in the Claude app.</p>
+      {% if job.tailoring_session_id %}
+        {% if session and session.status in ['launching', 'live'] %}
+          {% if session.status == 'live' and session.url %}
+            <div class="rc-live">
+              <a class="btn primary" href="{{ session.url }}" target="_blank" rel="noopener">Open session ↗</a>
+              <img class="rc-qr" alt="Scan to open this session in the Claude app"
+                   src="{{ url_for('job_remote_qr', job_id=job.job_id) }}">
+              <p class="muted small">“{{ session.name }}” is live — scan to open on your phone, or pick it from your session list at claude.ai/code.</p>
+            </div>
+          {% else %}
+            <p class="rc-launching">Launching session… hold on.</p>
+          {% endif %}
+          <form method="post" action="{{ url_for('job_remote_stop', job_id=job.job_id) }}">
+            <button type="submit" class="btn ghost">End session</button>
+          </form>
+        {% else %}
+          <form method="post" action="{{ url_for('job_remote', job_id=job.job_id) }}"
+                onsubmit="return confirm('Launch a Remote Control session to refine this CV? It resumes the interactive Claude session — continue in your browser or the Claude app.');">
+            <button type="submit" class="btn primary">Refine (Remote) ↗</button>
+          </form>
+          {% if session and session.status in ['ended', 'failed'] %}
+            <p class="muted small">Previous session {{ session.status }}. Launch again to resume where you left off.</p>
+          {% endif %}
+        {% endif %}
+      {% else %}
+        <p class="muted small">No resumable session for this CV. Reopen it to <em>shortlisted</em> and tailor again to create one.</p>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
   {% if job.summary %}
   <details class="panel" open>
     <summary>At a glance</summary>

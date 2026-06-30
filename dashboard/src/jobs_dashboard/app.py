@@ -6,6 +6,7 @@ behind Tailscale/localhost (it writes the DB and runs `claude`).
 
 from __future__ import annotations
 
+import io
 import os
 from pathlib import Path
 
@@ -16,12 +17,13 @@ from starlette.responses import (
     JSONResponse,
     PlainTextResponse,
     RedirectResponse,
+    Response,
 )
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
-from . import db, tasks
+from . import db, sessions, tasks
 
 HERE = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(HERE / "templates"))
@@ -86,6 +88,7 @@ async def job_detail(request: Request):
             "has_cv": has_cv,
             "actions": db.ACTIONS,
             "tasks": tasks.snapshot(),
+            "session": sessions.snapshot().get(job_id),
         },
     )
 
@@ -209,10 +212,58 @@ async def trigger_tailor(request: Request):
 
 async def tasks_status(request: Request):
     log = request.query_params.get("log")
-    payload = {"tasks": tasks.snapshot()}
+    payload = {"tasks": tasks.snapshot(), "sessions": sessions.snapshot()}
     if log:
         payload["log_tail"] = tasks.tail_log(log)
     return JSONResponse(payload)
+
+
+# --- Remote Control: resume a tailoring session to fine-tune the CV ---------
+
+REFINABLE_STATUSES = {"tailored", "applied"}
+
+
+async def trigger_remote(request: Request):
+    """Launch a Remote Control session resumed on the job's tailoring session."""
+    job_id = request.path_params["job_id"]
+    job = db.get_job(job_id)
+    if not job:
+        return PlainTextResponse("job not found", status_code=404)
+    if not (job.get("tailoring_session_id") or "").strip():
+        return PlainTextResponse(
+            "no resumable session — tailor this job first", status_code=409
+        )
+    # Don't launch into the middle of an active pipeline task editing the same DB/files.
+    if tasks.is_running("tailor") or tasks.is_running("ingest"):
+        return PlainTextResponse(
+            "a pipeline task is running; try again shortly", status_code=409
+        )
+    sessions.launch(job_id)
+    return RedirectResponse(
+        str(request.url_for("job_detail", job_id=job_id)), status_code=303
+    )
+
+
+async def stop_remote(request: Request):
+    sessions.stop(request.path_params["job_id"])
+    return RedirectResponse(
+        str(request.url_for("job_detail", job_id=request.path_params["job_id"])),
+        status_code=303,
+    )
+
+
+async def remote_qr(request: Request):
+    """SVG QR code for the live session URL, so a phone can scan straight in."""
+    sess = sessions.get(request.path_params["job_id"])
+    if not sess or not sess.url:
+        return PlainTextResponse("no live session", status_code=404)
+    import segno
+
+    buf = io.BytesIO()
+    segno.make(sess.url, error="m").save(
+        buf, kind="svg", scale=5, border=2, dark="#11131a", light="#ffffff"
+    )
+    return Response(buf.getvalue(), media_type="image/svg+xml")
 
 
 routes = [
@@ -227,6 +278,9 @@ routes = [
     Route("/job/{job_id}/action", job_action, methods=["POST"], name="job_action"),
     Route("/job/{job_id}/star", job_star, methods=["POST"], name="job_star"),
     Route("/job/{job_id}/tailor", trigger_tailor, methods=["POST"], name="job_tailor"),
+    Route("/job/{job_id}/remote", trigger_remote, methods=["POST"], name="job_remote"),
+    Route("/job/{job_id}/remote/stop", stop_remote, methods=["POST"], name="job_remote_stop"),
+    Route("/job/{job_id}/remote/qr.svg", remote_qr, name="job_remote_qr"),
     Mount("/static", StaticFiles(directory=str(HERE / "static")), name="static"),
 ]
 
