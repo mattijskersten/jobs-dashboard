@@ -33,8 +33,9 @@
     <div class="callout"><span class="eyebrow">triage note</span>{{ job.rationale }}</div>
   {% endif %}
 
+  {% set src_label = {'hiringcafe': 'hiring.cafe', 'linkedin': 'LinkedIn', 'manual': 'Listing'}.get(job.source, 'Listing') %}
   <div class="links">
-    {% if job.url %}<a class="btn ghost" href="{{ job.url }}" target="_blank" rel="noopener">hiring.cafe ↗</a>{% endif %}
+    {% if job.url %}<a class="btn ghost" href="{{ job.url }}" target="_blank" rel="noopener">{{ src_label }} ↗</a>{% endif %}
     {% if job.apply_url %}<a class="btn ghost" href="{{ job.apply_url }}" target="_blank" rel="noopener">Apply ↗</a>{% endif %}
     {% if has_cv %}<a class="btn primary" href="{{ url_for('job_cv', job_id=job.job_id) }}" target="_blank" rel="noopener">Tailored CV ↗</a>{% endif %}
   </div>
