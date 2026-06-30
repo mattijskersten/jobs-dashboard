@@ -8,10 +8,13 @@ CREATE TABLE IF NOT EXISTS jobs (
     url                 TEXT,                       -- hiring.cafe job page
     apply_url           TEXT,                       -- application on the company/ATS portal
     track               TEXT CHECK (track IN ('A', 'B')),
+    source              TEXT NOT NULL DEFAULT 'hiringcafe'   -- where the row came from
+                        CHECK (source IN ('hiringcafe', 'linkedin', 'manual')),
     status              TEXT NOT NULL DEFAULT 'seen'
                         CHECK (status IN ('seen','triaged','needs-review',
                                           'shortlisted','tailored','applied','rejected')),
     score               INTEGER CHECK (score BETWEEN 1 AND 10),
+    starred             INTEGER NOT NULL DEFAULT 0,  -- manual priority flag, independent of status
     rationale           TEXT,                       -- one-line triage rationale
     posted_date         TEXT,                       -- hiring.cafe estimated_publish_date (YYYY-MM-DD)
     summary_json        TEXT,                       -- compact search summary captured at ingest (triage input)

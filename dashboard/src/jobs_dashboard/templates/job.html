@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ job.company }} · {{ job.title }}{% endblock %}
+
+{% block content %}
+<a class="backlink" href="{{ url_for('index') }}">← back to board</a>
+
+<article class="jobdetail">
+  <div class="detail-head">
+    {% if job.score is none %}
+      <span class="score chip-score none">–</span>
+    {% else %}
+      <span class="score chip-score sc-{{ 'good' if job.score >= 8 else 'mid' if job.score >= 6 else 'bad' }}">{{ job.score }}</span>
+    {% endif %}
+    <div class="head-text">
+      <h1>{{ job.company }}</h1>
+      <p class="title">{{ job.title }}</p>
+    </div>
+    <form class="starbtn detail-star" method="post" action="{{ url_for('job_star', job_id=job.job_id) }}">
+      <input type="hidden" name="next" value="{{ request.url }}">
+      <button type="submit" aria-pressed="{{ 'true' if job.starred else 'false' }}"
+              aria-label="{{ 'Unstar' if job.starred else 'Star' }} this job">{{ '★' if job.starred else '☆' }}</button>
+    </form>
+  </div>
+
+  <div class="badges">
+    <span class="badge st-{{ job.status }}">{{ job.status }}</span>
+    <span class="src-tag">{{ job.source }}</span>
+    {% if job.track %}<span class="badge tag-track" data-t="{{ job.track }}">track {{ job.track }}</span>{% endif %}
+    {% if job.posted_date %}<span class="badge">posted {{ job.posted_date }}</span>{% endif %}
+  </div>
+
+  {% if job.rationale %}
+    <div class="callout"><span class="eyebrow">triage note</span>{{ job.rationale }}</div>
+  {% endif %}
+
+  <div class="links">
+    {% if job.url %}<a class="btn ghost" href="{{ job.url }}" target="_blank" rel="noopener">hiring.cafe ↗</a>{% endif %}
+    {% if job.apply_url %}<a class="btn ghost" href="{{ job.apply_url }}" target="_blank" rel="noopener">Apply ↗</a>{% endif %}
+    {% if has_cv %}<a class="btn primary" href="{{ url_for('job_cv', job_id=job.job_id) }}" target="_blank" rel="noopener">Tailored CV ↗</a>{% endif %}
+  </div>
+
+  {% if job.summary %}
+  <details class="panel" open>
+    <summary>At a glance</summary>
+    <div class="panel-body">
+      <dl class="kv">
+        {% for k in ['location','workplace_type','seniority','role_type','min_years_experience','commitment'] %}
+          {% if job.summary.get(k) %}<dt>{{ k.replace('_',' ') }}</dt><dd>{{ job.summary[k] }}</dd>{% endif %}
+        {% endfor %}
+      </dl>
+      {% if job.summary.get('requirements_summary') %}
+        <p class="reqs">{{ job.summary['requirements_summary'] }}</p>
+      {% endif %}
+    </div>
+  </details>
+  {% endif %}
+
+  {% if jd_text %}
+  <details class="panel jd">
+    <summary>Job description</summary>
+    <div class="panel-body"><pre>{{ jd_text }}</pre></div>
+  </details>
+  {% else %}
+  <p class="muted">No job description saved on disk for this role.</p>
+  {% endif %}
+
+  {% set ns = namespace(has_actions=false) %}
+  {% for action, spec in actions.items() %}{% if job.status in spec[1] %}{% set ns.has_actions = true %}{% endif %}{% endfor %}
+  {% if ns.has_actions or job.status == 'shortlisted' %}
+  <div class="actionbar">
+    {% for action, spec in actions.items() %}
+      {% if job.status in spec[1] %}
+      <form method="post" action="{{ url_for('job_action', job_id=job.job_id) }}">
+        <input type="hidden" name="action" value="{{ action }}">
+        <button type="submit" class="btn act-{{ action }}">{{ action }}</button>
+      </form>
+      {% endif %}
+    {% endfor %}
+    {% if job.status == 'shortlisted' %}
+      <form method="post" action="{{ url_for('job_tailor', job_id=job.job_id) }}" data-task="tailor"
+            onsubmit="return confirm('Tailor the CV for this role? It spawns a claude session and takes a few minutes.');">
+        <button type="submit" class="btn primary" {% if tasks.get('tailor') and tasks['tailor'].status == 'running' %}disabled{% endif %}>
+          {% if tasks.get('tailor') and tasks['tailor'].status == 'running' %}Tailoring…{% else %}Tailor CV{% endif %}
+        </button>
+      </form>
+    {% endif %}
+    <span class="task-note" data-task-note="tailor">
+      {% if tasks.get('tailor') %}<a href="#" data-log="{{ tasks['tailor'].log }}">{{ tasks['tailor'].status }}</a>{% endif %}
+    </span>
+  </div>
+  {% endif %}
+</article>
+{% endblock %}

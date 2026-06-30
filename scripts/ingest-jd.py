@@ -104,8 +104,8 @@ def main() -> None:
         else:
             db.execute(
                 "INSERT INTO jobs (job_id, company, title, url, apply_url, track,"
-                " status, posted_date, summary_json, jd_path, first_seen_run_id)"
-                " VALUES (?,?,?,?,?,?,'seen',?,?,?,?)",
+                " source, status, posted_date, summary_json, jd_path, first_seen_run_id)"
+                " VALUES (?,?,?,?,?,?,'manual','seen',?,?,?,?)",
                 (job_id, args.company, args.title, args.url, args.apply_url,
                  args.track, args.posted_date, json.dumps(summary, ensure_ascii=False),
                  jd_path, args.run_id),
