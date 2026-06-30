@@ -187,6 +187,18 @@ class HiringCafeClient:
                 f"/job/{quote(requisition_id, safe='')}.json",
                 {"requisitionId": requisition_id},
             )
+            # hiring.cafe now serves SEO-slug job URLs: the bare-id data route
+            # 308-redirects to /job/<slug>-<id>. Next.js reports this as an
+            # __N_REDIRECT inside pageProps (HTTP 200, no `job`) rather than a
+            # real redirect, so follow it to the slug data route, which carries
+            # the actual job document.
+            redirect = props.get("__N_REDIRECT")
+            if redirect and "job" not in props:
+                slug = redirect.rsplit("/job/", 1)[-1].split("?", 1)[0]
+                props = self._data_route(
+                    f"/job/{quote(slug, safe='')}.json",
+                    {"requisitionId": requisition_id},
+                )
         except NotFoundError:
             props = {}
         job = props.get("job")
