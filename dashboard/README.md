@@ -8,3 +8,5 @@ it and reach it over Tailscale.
 It is intentionally unauthenticated — keep it behind Tailscale (or localhost). It
 writes the database and shells out to `claude` for tailoring, so it must never be
 exposed publicly.
+
+Tests (status transitions, path-safety guards): `uv run pytest` in this directory.

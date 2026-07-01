@@ -7,6 +7,9 @@ requires-python = ">=3.10"
 dependencies = [
     "fastmcp>=2.0",
     "httpx>=0.27",
+    # scripts/ingest-jobs.py runs in this venv (via scripts/ingest.sh) and
+    # reads data/search-config.yaml
+    "pyyaml>=6.0",
 ]
 
 [project.scripts]
@@ -18,3 +21,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/hiring_cafe_mcp"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

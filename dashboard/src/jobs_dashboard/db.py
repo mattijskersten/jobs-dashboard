@@ -15,15 +15,18 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-# Active funnel statuses, in the order a job moves through them.
+# Active funnel statuses, in the order a job moves through them. (The schema
+# CHECK also still accepts a legacy 'triaged' value nothing writes anymore.)
 STATUS_ORDER = [
-    "seen", "triaged", "needs-review", "shortlisted", "tailored", "applied", "rejected",
+    "seen", "needs-review", "shortlisted", "tailored", "applied", "rejected",
 ]
 
 # action -> (new_status, {statuses it may be applied from})
+# Canonical transition table; scripts/promote.sh mirrors the promote/reject
+# rules for needs-review rows — keep them in sync.
 ACTIONS: dict[str, tuple[str, set[str]]] = {
     "promote": ("shortlisted", {"needs-review"}),
-    "reject": ("rejected", {"needs-review", "shortlisted", "seen", "triaged"}),
+    "reject": ("rejected", {"needs-review", "shortlisted", "seen"}),
     "reopen": ("needs-review", {"rejected"}),
     "applied": ("applied", {"tailored"}),
 }

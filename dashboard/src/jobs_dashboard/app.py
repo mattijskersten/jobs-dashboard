@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 import os
 from pathlib import Path
+from urllib.parse import urlencode
 
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -155,10 +156,13 @@ async def job_action(request: Request):
     job_id = request.path_params["job_id"]
     form = await request.form()
     action = form.get("action", "")
-    db.apply_action(job_id, action)
-    # progressive enhancement: redirect back where the user was
-    back = form.get("next") or request.url_for("job_detail", job_id=job_id)
-    return RedirectResponse(str(back), status_code=303)
+    changed, message = db.apply_action(job_id, action)
+    # progressive enhancement: redirect back where the user was; a refused
+    # action (stale page, illegal transition) surfaces as a flash message
+    back = str(form.get("next") or request.url_for("job_detail", job_id=job_id))
+    if not changed:
+        back += ("&" if "?" in back else "?") + urlencode({"msg": message})
+    return RedirectResponse(back, status_code=303)
 
 
 async def trigger_ingest(request: Request):

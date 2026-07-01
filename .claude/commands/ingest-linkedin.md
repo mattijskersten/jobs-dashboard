@@ -54,11 +54,10 @@ the whole batch in memory) unless it is a duplicate:
 
 1. **Exact:** skip if `job_id = 'linkedin-<id>'` already exists.
 2. **Cross-source:** skip if an existing row (e.g. from hiring.cafe) is the same
-   role — same *normalized* company and a similar title. Normalize as
-   `scripts/compare-linkedin.py` does (lowercase, strip punctuation and company
-   suffixes like inc/ltd/sp z o o; for titles also drop remote/hybrid/city
-   words) and treat title similarity ≳ 0.6 as a match. Log every skip with the
-   matched existing job.
+   role — same *normalized* company and a similar title. Normalize by
+   lowercasing and stripping punctuation and company suffixes (inc/ltd/gmbh/
+   sp z o o…); for titles also drop remote/hybrid/city words. Treat title
+   similarity ≳ 0.6 as a match. Log every skip with the matched existing job.
 
 Insert survivors (escape `'` as `''`):
 

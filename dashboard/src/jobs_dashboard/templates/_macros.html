@@ -1,0 +1,9 @@
+{# Shared template macros. Thresholds mirror triage (tooling/TRIAGE.md):
+   ≥8 shortlist-good, ≥6 review-mid, below that bad. #}
+{% macro scorechip(score) %}
+  {%- if score is none -%}
+    <span class="score chip-score none">–</span>
+  {%- else -%}
+    <span class="score chip-score sc-{{ 'good' if score >= 8 else 'mid' if score >= 6 else 'bad' }}">{{ score }}</span>
+  {%- endif -%}
+{% endmacro %}

@@ -2,6 +2,9 @@
 # Promote a needs-review job to shortlisted (or reject it).
 #   scripts/promote.sh <job_id>           → shortlisted; next run tailors it
 #   scripts/promote.sh <job_id> reject    → rejected
+# The allowed transitions are defined canonically in the dashboard's
+# db.py ACTIONS table (dashboard/src/jobs_dashboard/db.py); the WHERE guard
+# below mirrors its promote/reject-from-needs-review rules — keep them in sync.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DB="$ROOT/data/jobs.db"

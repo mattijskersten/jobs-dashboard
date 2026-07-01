@@ -1,13 +1,6 @@
 {% extends "base.html" %}
+{% from "_macros.html" import scorechip %}
 {% block title %}Jobs Dashboard · overview{% endblock %}
-
-{% macro scorechip(score) %}
-  {%- if score is none -%}
-    <span class="score chip-score none">–</span>
-  {%- else -%}
-    <span class="score chip-score sc-{{ 'good' if score >= 8 else 'mid' if score >= 6 else 'bad' }}">{{ score }}</span>
-  {%- endif -%}
-{% endmacro %}
 
 {% set active = filters.status.split(',') if filters.status else [] %}
 

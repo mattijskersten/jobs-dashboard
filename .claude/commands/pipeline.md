@@ -21,8 +21,9 @@ multi-statement changes in a transaction.
   `sqlite3 data/jobs.db "UPDATE jobs SET first_seen_run_id = <run_id> WHERE status = 'seen' AND first_seen_run_id IS NULL;"`
   (collection commands leave it NULL; this attributes every newly-collected job
   — hiring.cafe, LinkedIn, or manual — to this run).
-- Read `data/search-profile.md` — it defines the hard filters, soft
-  preferences, and scoring guide. It is the source of truth for triage.
+- Read `tooling/TRIAGE.md` — the scoring procedure — and
+  `data/search-profile.md` — the hard filters, soft preferences, and scoring
+  guide it applies. Together they are the source of truth for triage.
 
 ## 1. Triage
 
@@ -50,25 +51,15 @@ Rows carry a `summary_json.source` that decides which details tool to use:
 - otherwise (hiring.cafe) — use `mcp__hiring-cafe__get_job_details`.
 
 For each `seen` row, judge from its `summary_json` (location,
-workplace_type, seniority, role_type, salary, requirements_summary…):
+workplace_type, seniority, role_type, salary, requirements_summary…) and
+score it by the rules in `tooling/TRIAGE.md`. Batch specifics on top of
+those rules:
 
-1. **Hard filters are pass/fail** (location, seniority, track fit — see
-   profile). A miss is `rejected` with score 1 and a one-line rationale naming
-   the failed filter. Do not fetch details for these. Correct `track` if the
-   ingest's pass-based guess is wrong.
-2. For jobs that pass, score 1–10 against the profile's soft preferences and
-   scoring guide (domain, scope, people management, posting freshness — stale
-   postings score lower per the profile). Call `get_job_details` when the
-   summary leaves a likely-≥6 job ambiguous.
-3. **For every job scoring ≥ 6:** fetch full details (if not already), and save
-   the complete description as plain text to
-   `data/jds/JD $COMPANY $JOBID.txt` (company name stripped of `/\:*?"<>|`).
-   Tailoring and later fine-tuning read the JD from disk — never re-fetch it.
-4. Update each row (batch ~20 per transaction; double any `'` in strings):
-   - score ≥ 8 → `status = 'shortlisted'`
-   - 6–7 → `status = 'needs-review'`
-   - ≤ 5 → `status = 'rejected'`
-   - set score, rationale, jd_path (≥6 only), updated_at.
+- Call the row's details tool (per the source rules above) when the summary
+  leaves a likely-≥6 job ambiguous; hard-filter rejects never get a fetch.
+- For every job scoring ≥ 6, fetch full details (if not already fetched) to
+  make the required `data/jds/` save; manual rows already have the JD on disk.
+- Batch the row updates ~20 per transaction.
 
 Before moving on, assert the queue is drained —
 `sqlite3 data/jobs.db "SELECT count(*) FROM jobs WHERE status = 'seen';"`

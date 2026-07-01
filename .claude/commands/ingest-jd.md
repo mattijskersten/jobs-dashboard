@@ -33,18 +33,12 @@ set and `summary_json.source = "manual"`. Note the printed `job_id`.
 
 ## 3. Triage it
 
-Read `data/search-profile.md`, then score this one job exactly as the
-`/pipeline` triage does — but the full JD is already on disk, so read it from
-`jd_path` for your judgment and do **not** call `get_job_details` (there is no
-hiring.cafe id to fetch).
-
-1. **Hard filters are pass/fail** (location, seniority, and track fit per your
-   search profile). A miss → `status='rejected'`, score 1, one-line rationale
-   naming the failed filter.
-2. Otherwise score 1–10 against the profile's soft preferences. Set `track`
-   (A or B, per the tracks defined in your search profile) if not already set.
-3. Update the row (escape `'` as `''`): set score, rationale, updated_at, and
-   `status` = `shortlisted` (≥8) / `needs-review` (6–7) / `rejected` (≤5).
+Read `tooling/TRIAGE.md` (the scoring procedure) and `data/search-profile.md`
+(the criteria it applies), then score this one job by those rules exactly as
+the `/pipeline` triage does — but the full JD is already on disk, so read it
+from `jd_path` for your judgment, do **not** call `get_job_details` (there is
+no hiring.cafe id to fetch), and skip the JD save (ingest already set
+`jd_path`). Update the row per the rules.
 
 ## 4. Tailor if shortlisted
 

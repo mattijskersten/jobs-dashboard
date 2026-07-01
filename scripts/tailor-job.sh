@@ -30,8 +30,8 @@ fi
 # Candidate name from data/cv.md front matter (for the output filename); blank if absent
 CANDIDATE=$(sed -n 's/^name:[[:space:]]*//p' "$ROOT/data/cv.md" 2>/dev/null | head -1 | tr -d '"' | sed 's/  */ /g; s/^ //; s/ $//')
 
-# Company name as a filename label (strip path-hostile characters)
-LABEL=$(printf '%s' "$COMPANY" | tr -d '/\\:*?"<>|' | sed 's/  */ /g; s/^ //; s/ $//')
+# Company name as a filename label (shared rule: scripts/sanitize.py)
+LABEL=$(python3 "$ROOT/scripts/sanitize.py" "$COMPANY")
 if [ -n "$CANDIDATE" ]; then BASE="cv $CANDIDATE $LABEL"; else BASE="cv $LABEL"; fi
 CV_MD="data/cvs/$BASE.md"
 CV_PDF="data/cvs/$BASE.pdf"

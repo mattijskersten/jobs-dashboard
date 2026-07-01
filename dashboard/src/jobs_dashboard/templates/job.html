@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import scorechip %}
 {% block title %}{{ job.company }} · {{ job.title }}{% endblock %}
 
 {% block content %}
@@ -6,11 +7,7 @@
 
 <article class="jobdetail">
   <div class="detail-head">
-    {% if job.score is none %}
-      <span class="score chip-score none">–</span>
-    {% else %}
-      <span class="score chip-score sc-{{ 'good' if job.score >= 8 else 'mid' if job.score >= 6 else 'bad' }}">{{ job.score }}</span>
-    {% endif %}
+    {{ scorechip(job.score) }}
     <div class="head-text">
       <h1>{{ job.company }}</h1>
       <p class="title">{{ job.title }}</p>

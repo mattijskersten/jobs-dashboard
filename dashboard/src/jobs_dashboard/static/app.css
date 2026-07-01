@@ -303,6 +303,13 @@ details.runs > summary::before { content: "▾ "; color: var(--brass); }
   padding: 12px 14px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin: 14px 0; font-size: 14.5px; line-height: 1.5;
 }
+/* refused action / stale-page notice (?msg= on redirect) */
+.flash {
+  border-left: 2px solid var(--bad); background: var(--surface);
+  color: var(--bad); padding: 12px 14px; margin: 0 0 14px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 14px; line-height: 1.5;
+}
 .callout .eyebrow { display: block; font-size: 10px; letter-spacing: .18em;
   text-transform: uppercase; color: var(--faint); margin-bottom: 5px; }
 .links { display: flex; flex-wrap: wrap; gap: 9px; margin: 16px 0; }

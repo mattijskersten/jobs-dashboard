@@ -14,8 +14,8 @@ for col in posted_date apply_url summary_json; do
 done
 
 # source: added later. ALTER cannot carry the CHECK constraint schema.sql
-# declares, but the NOT NULL default keeps every row non-null. New rows from the
-# ingest writers set it explicitly; backfill-source.py corrects pre-existing rows.
+# declares, but the NOT NULL default keeps every row non-null. The ingest
+# writers set it explicitly on every new row.
 if ! sqlite3 "$ROOT/data/jobs.db" "PRAGMA table_info(jobs);" | grep -q "|source|"; then
   sqlite3 "$ROOT/data/jobs.db" "ALTER TABLE jobs ADD COLUMN source TEXT NOT NULL DEFAULT 'hiringcafe';"
 fi

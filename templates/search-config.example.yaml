@@ -1,0 +1,25 @@
+# hiring.cafe search configuration for scripts/ingest.sh.
+# Copy to data/search-config.yaml (gitignored) and edit with your real values.
+
+# Anchor city for the search variants: every filter below runs once limited to
+# local_radius_miles around this location, and once country-wide Remote-only.
+# JOBS_SEARCH_LOCATION in the environment overrides it.
+location: "Berlin, Germany"
+local_radius_miles: 50
+
+# Applied to every pass. Use [] to not filter on a facet.
+seniority_levels: ["Senior Level"]
+role_types: ["People Manager"]
+
+# Each track is a list of filters; each filter is ONE of:
+#   departments: [...]   — hiring.cafe's job-category facet (high precision,
+#                          not exhaustive; see hiring-cafe-mcp for valid names)
+#   query: "..."         — broad keyword search (recall backstop)
+# Track names must be A or B (the jobs table CHECKs track IN ('A','B')).
+tracks:
+  A:
+    - departments: ["Product Management"]
+    - query: "product"
+  B:
+    - departments: ["Information Technology"]
+    - query: "IT information technology"

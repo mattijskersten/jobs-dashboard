@@ -21,7 +21,7 @@ committed). Copy the templates into `data/` to get started (see **Setup**).
 | `.claude/commands/` | `/pipeline` (triage → tailor → report the queue); the collection commands `/ingest-hiringcafe`, `/ingest-linkedin`, `/ingest-jd`; and `/promote` |
 | `tooling/` | CV build assets (`build.sh`, `cv-template.tex`, `cv-filter.lua`) and tailoring rules (`AGENTS.md`) |
 | `templates/` | Sanitized templates that ship: `cv.example.md`, `search-profile.example.md`, `cv-example-{1,2}.md` |
-| `scripts/` | `run-pipeline.sh` (headless entry), `ingest.sh` (mechanical search→DB), `ingest-jd.sh` (land a hand-supplied JD→DB), `tailor-pending.sh`, `tailor-job.sh`, `promote.sh`, `init-db.sh`, `dashboard.sh` (launch the web UI), `backfill-job-fields.py`, `backfill-source.py` |
+| `scripts/` | `run-pipeline.sh` (headless entry), `ingest.sh` (mechanical search→DB; runs in `hiring-cafe-mcp/.venv` for httpx+yaml), `ingest-jd.sh` (land a hand-supplied JD→DB), `tailor-pending.sh`, `tailor-job.sh`, `promote.sh`, `init-db.sh`, `dashboard.sh` (launch the web UI) |
 | `data/` | **All personal content, gitignored:** `cv.md` (master CV), `search-profile.md` (job criteria), `references/` (style-ref CVs), `jobs.db`, `jds/`, `cvs/`, `reports/` |
 
 ## Setup
@@ -155,8 +155,8 @@ like everything else here it must stay behind Tailscale. Optionally enable mobil
 
 State columns it relies on: every job row carries a non-null `source`
 (`hiringcafe` | `linkedin` | `manual`) and a `starred` flag (0/1); run
-`scripts/init-db.sh` to migrate an older DB (it adds both columns idempotently)
-and `scripts/backfill-source.py` once to populate `source` on pre-existing rows.
+`scripts/init-db.sh` to migrate an older DB (it adds both columns idempotently,
+defaulting `source` to `hiringcafe`).
 
 ## How a run works
 
@@ -189,6 +189,6 @@ Then **`/pipeline`** processes the queue (source-agnostic):
 
 ## Job statuses
 
-`seen → triaged` are transient; rows land as `shortlisted` (≥ 8, or promoted),
+`seen` is transient; triage moves rows to `shortlisted` (≥ 8, or promoted),
 `needs-review` (6–7), or `rejected` (≤ 5, or failed a hard filter), then move
 to `tailored` and eventually `applied` (manual).

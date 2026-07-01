@@ -23,19 +23,15 @@ Stdlib only — no hiring.cafe API call is made.
 import argparse
 import hashlib
 import json
-import re
 import sqlite3
 import sys
 from pathlib import Path
 
+from sanitize import safe_label  # scripts/sanitize.py — shared with tailor-job.sh
+
 ROOT = Path(__file__).resolve().parent.parent
 JD_DIR = ROOT / "data" / "jds"
 SUMMARY_EXCERPT_CHARS = 1500
-
-
-def safe_label(name: str) -> str:
-    """Company name as a filename label — same sanitization tailor-job.sh uses."""
-    return re.sub(r"\s+", " ", re.sub(r'[/\\:*?"<>|]', "", name)).strip()
 
 
 def derive_id(company: str, title: str) -> str:

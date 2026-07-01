@@ -14,10 +14,11 @@ Usage (via scripts/ingest.sh, which supplies the right interpreter):
 --days    posted_within_days window (default 7; use 121 for backfill)
 --run-id  runs.run_id to stamp on first_seen_run_id
 
-Passes (from data/search-profile.md): for each track, a departments pass
-and a broad query pass, each in a local-50mi and a remote variant — always
-Senior Level + People Manager. Requests are paced at 1/s (unofficial API;
-heavier bursts have triggered Vercel bot protection).
+Passes (from data/search-config.yaml — copy templates/search-config.example.yaml
+and edit): for each track, every configured filter (departments or query) runs
+in a local-radius and a remote variant, with the configured seniority/role-type
+facets. Requests are paced at 1/s (unofficial API; heavier bursts have
+triggered Vercel bot protection).
 """
 
 import argparse
@@ -28,44 +29,67 @@ import sys
 import time
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "hiring-cafe-mcp" / "src"))
 
 from hiring_cafe_mcp.api import HiringCafeClient, HiringCafeError  # noqa: E402
 from hiring_cafe_mcp.server import _dedupe, _summarize_hit  # noqa: E402
 
-# TODO(#1): SEARCH_LOCATION and TRACK_FILTERS below are the live search
-# config but are hardcoded here (the script does not read data/search-profile.md).
-# To make the repo fully generic, load tracks + location from a gitignored
-# data/ config (e.g. data/search-config.yaml) with a shipped templates/ example,
-# then remove these personal defaults. Behaviour-affecting — validate with a real
-# ingest run after changing. (The command files and compare-linkedin.py were
-# already genericized; this is the remaining piece.)
-
-# Your search anchor location — override with JOBS_SEARCH_LOCATION, or edit here.
-SEARCH_LOCATION = os.environ.get("JOBS_SEARCH_LOCATION", "Berlin, Germany")
-
-TRACK_FILTERS = {
-    "A": [
-        {"departments": ["Product Management"]},
-        {"searchQuery": "product"},
-    ],
-    "B": [
-        {"departments": ["Information Technology"]},
-        {"searchQuery": "IT information technology"},
-    ],
-}
+CONFIG_PATH = ROOT / "data" / "search-config.yaml"
 MAX_SERVER_PAGES = 25  # safety stop: 25 × 40 = 1000 unique jobs per pass
 
 
-def run_pass(client, base_state: dict, days: int, label: str) -> tuple[dict, str | None]:
-    """One paginated pass. Returns ({requisition_id: summary}, error)."""
-    state = {
-        **base_state,
-        "seniorityLevel": ["Senior Level"],
-        "roleTypes": ["People Manager"],
-        "dateFetchedPastNDays": days,
+def load_config() -> dict:
+    """Parse data/search-config.yaml into the shape the passes need."""
+    if not CONFIG_PATH.is_file():
+        sys.exit(
+            f"missing {CONFIG_PATH} — copy templates/search-config.example.yaml"
+            " there and fill in your search"
+        )
+    raw = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8")) or {}
+    location = os.environ.get("JOBS_SEARCH_LOCATION") or raw.get("location")
+    if not location:
+        sys.exit(f"{CONFIG_PATH}: 'location' is required")
+    tracks = raw.get("tracks") or {}
+    if not tracks:
+        sys.exit(f"{CONFIG_PATH}: at least one entry under 'tracks' is required")
+    track_filters: dict[str, list[dict]] = {}
+    for track, entries in tracks.items():
+        filters = []
+        for entry in entries or []:
+            if not isinstance(entry, dict) or len(entry) != 1:
+                sys.exit(
+                    f"{CONFIG_PATH}: track {track}: each filter must be a single"
+                    " 'departments' or 'query' mapping"
+                )
+            key, value = next(iter(entry.items()))
+            if key == "departments":
+                filters.append({"departments": value})
+            elif key == "query":
+                filters.append({"searchQuery": value})
+            else:
+                sys.exit(f"{CONFIG_PATH}: track {track}: unknown filter '{key}'")
+        if not filters:
+            sys.exit(f"{CONFIG_PATH}: track {track} has no filters")
+        track_filters[str(track)] = filters
+    return {
+        "location": location,
+        "local_radius_miles": int(raw.get("local_radius_miles") or 50),
+        "seniority_levels": raw.get("seniority_levels") or [],
+        "role_types": raw.get("role_types") or [],
+        "track_filters": track_filters,
     }
+
+
+def run_pass(client, cfg: dict, base_state: dict, days: int, label: str) -> tuple[dict, str | None]:
+    """One paginated pass. Returns ({requisition_id: summary}, error)."""
+    state = {**base_state, "dateFetchedPastNDays": days}
+    if cfg["seniority_levels"]:
+        state["seniorityLevel"] = cfg["seniority_levels"]
+    if cfg["role_types"]:
+        state["roleTypes"] = cfg["role_types"]
     out: dict[str, dict] = {}
     for page in range(MAX_SERVER_PAGES):
         time.sleep(1)  # pace every call; unofficial API, avoid rate limits
@@ -94,11 +118,12 @@ def main() -> None:
     ap.add_argument("--run-id", type=int, default=None)
     args = ap.parse_args()
 
+    cfg = load_config()
     client = HiringCafeClient()
-    local = client.resolve_location(SEARCH_LOCATION, radius_miles=50)
-    remote = client.resolve_location(SEARCH_LOCATION)
+    local = client.resolve_location(cfg["location"], radius_miles=cfg["local_radius_miles"])
+    remote = client.resolve_location(cfg["location"])
     if not local or not remote:
-        sys.exit(f"could not resolve {SEARCH_LOCATION}")
+        sys.exit(f"could not resolve {cfg['location']}")
 
     variants = [
         ("local", {"locations": [local]}),
@@ -108,12 +133,12 @@ def main() -> None:
     jobs: dict[str, tuple[str, dict]] = {}  # id -> (track, summary)
     errors: list[str] = []
     print(f"ingest: window {args.days} days")
-    for track, filter_list in TRACK_FILTERS.items():
+    for track, filter_list in cfg["track_filters"].items():
         for base in filter_list:
             for vname, vstate in variants:
                 fname = next(iter(base))
                 label = f"track {track} / {fname} / {vname}"
-                found, err = run_pass(client, {**base, **vstate}, args.days, label)
+                found, err = run_pass(client, cfg, {**base, **vstate}, args.days, label)
                 if err:
                     errors.append(err)
                 for jid, summary in found.items():
