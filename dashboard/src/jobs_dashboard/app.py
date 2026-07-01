@@ -78,14 +78,17 @@ async def job_detail(request: Request):
     jd_file = db.safe_data_path(job.get("jd_path"))
     if jd_file:
         jd_text = jd_file.read_text(encoding="utf-8", errors="replace")
-    has_cv = db.safe_data_path(job.get("cv_pdf_path")) is not None
+    cv_file = db.safe_data_path(job.get("cv_pdf_path"))
     return templates.TemplateResponse(
         request,
         "job.html",
         {
             "job": job,
             "jd_text": jd_text,
-            "has_cv": has_cv,
+            "has_cv": cv_file is not None,
+            # the real on-disk PDF name, used as the download URL's last segment
+            # so "save as" defaults to it (e.g. "cv Jane Doe Acme.pdf")
+            "cv_filename": cv_file.name if cv_file else None,
             "actions": db.ACTIONS,
             "tasks": tasks.snapshot(),
             "session": sessions.snapshot().get(job_id),
@@ -274,7 +277,9 @@ routes = [
     Route("/run/{run_id}", run_digest, name="run_digest"),
     Route("/job/{job_id}", job_detail, name="job_detail"),
     Route("/job/{job_id}/jd", job_jd, name="job_jd"),
-    Route("/job/{job_id}/cv.pdf", job_cv, name="job_cv"),
+    # {filename} is cosmetic — the file is looked up by job_id — but it makes the
+    # browser's "save as" default to the real CV name instead of "cv.pdf".
+    Route("/job/{job_id}/cv/{filename}", job_cv, name="job_cv"),
     Route("/job/{job_id}/action", job_action, methods=["POST"], name="job_action"),
     Route("/job/{job_id}/star", job_star, methods=["POST"], name="job_star"),
     Route("/job/{job_id}/tailor", trigger_tailor, methods=["POST"], name="job_tailor"),

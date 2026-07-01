@@ -37,7 +37,7 @@
   <div class="links">
     {% if job.url %}<a class="btn ghost" href="{{ job.url }}" target="_blank" rel="noopener">{{ src_label }} ↗</a>{% endif %}
     {% if job.apply_url %}<a class="btn ghost" href="{{ job.apply_url }}" target="_blank" rel="noopener">Apply ↗</a>{% endif %}
-    {% if has_cv %}<a class="btn primary" href="{{ url_for('job_cv', job_id=job.job_id) }}" target="_blank" rel="noopener">Tailored CV ↗</a>{% endif %}
+    {% if has_cv %}<a class="btn primary" href="{{ url_for('job_cv', job_id=job.job_id, filename=cv_filename) }}" target="_blank" rel="noopener">Tailored CV ↗</a>{% endif %}
   </div>
 
   {% if job.status in ['tailored', 'applied'] %}
