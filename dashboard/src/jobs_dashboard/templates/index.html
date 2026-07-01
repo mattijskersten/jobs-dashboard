@@ -4,6 +4,16 @@
 
 {% set active = filters.status.split(',') if filters.status else [] %}
 
+{% block headeractions %}
+  {% if overview.runs %}
+    {% set last = overview.runs[0] %}
+    <a class="runchip" href="{{ url_for('run_digest', run_id=last.run_id) }}"
+       title="Latest pipeline run">
+      #{{ last.run_id }} · {{ last.tailored }} tailored{% if last.errors %} <span class="warn">⚠</span>{% elif last.finished_at %} ✓{% endif %}
+    </a>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
 {# preserve non-status filters while toggling stages #}
 {%- set extra %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.track %}&track={{ filters.track }}{% endif %}{% if filters.min_score != '' %}&min_score={{ filters.min_score }}{% endif %}{% endset -%}
@@ -17,9 +27,10 @@
   <p class="eyebrow">live funnel · tap stages to filter (multi-select)</p>
   <div class="ribbon">
     {% for st, label in [('needs-review','review'), ('shortlisted','shortlist'), ('tailored','tailored'), ('applied','applied')] %}
-      <a class="stage {% if st in active %}active{% endif %}" href="{{ stage_href(st) }}"
+      {% set n = overview.status_counts.get(st, 0) %}
+      <a class="stage {% if st in active %}active{% endif %} {% if not n %}zero{% endif %}" href="{{ stage_href(st) }}"
          aria-pressed="{{ 'true' if st in active else 'false' }}">
-        <span class="stage-n">{{ overview.status_counts.get(st, 0) }}</span>
+        <span class="stage-n">{{ n }}</span>
         <span class="stage-l">{{ label }}</span>
       </a>
       {% if not loop.last %}<span class="flow" aria-hidden="true">→</span>{% endif %}
@@ -45,30 +56,36 @@
   </p>
 </section>
 
-<section class="actions-bar">
-  <div class="action-pair">
-    <form method="post" action="{{ url_for('ingest') }}" data-task="ingest">
-      <input type="hidden" name="days" value="7">
-      <button type="submit" class="btn primary" {% if tasks.get('ingest') and tasks['ingest'].status == 'running' %}disabled{% endif %}>
-        {% if tasks.get('ingest') and tasks['ingest'].status == 'running' %}Searching hiring.cafe…{% else %}Search hiring.cafe{% endif %}
-      </button>
-    </form>
-    <span class="task-note" data-task-note="ingest">
-      {% if tasks.get('ingest') %}<a href="#" data-log="{{ tasks['ingest'].log }}">{{ tasks['ingest'].status }}</a>{% endif %}
-    </span>
-  </div>
-  <div class="action-pair">
-    <form method="post" action="{{ url_for('ingest_linkedin') }}" data-task="linkedin"
-          onsubmit="return confirm('Run a LinkedIn search? It drives a real browser session — use it deliberately, not repeatedly.');">
-      <button type="submit" class="btn" {% if tasks.get('linkedin') and tasks['linkedin'].status == 'running' %}disabled{% endif %}>
-        {% if tasks.get('linkedin') and tasks['linkedin'].status == 'running' %}Searching LinkedIn…{% else %}Search LinkedIn{% endif %}
-      </button>
-    </form>
-    <span class="task-note" data-task-note="linkedin">
-      {% if tasks.get('linkedin') %}<a href="#" data-log="{{ tasks['linkedin'].log }}">{{ tasks['linkedin'].status }}</a>{% endif %}
-    </span>
-  </div>
-</section>
+{# collection is an occasional action — keep it folded unless one is running #}
+{% set collecting = (tasks.get('ingest') and tasks['ingest'].status == 'running')
+                 or (tasks.get('linkedin') and tasks['linkedin'].status == 'running') %}
+<details class="collect" {% if collecting %}open{% endif %}>
+  <summary>Collect jobs{% if collecting %} — running…{% endif %}</summary>
+  <section class="actions-bar">
+    <div class="action-pair">
+      <form method="post" action="{{ url_for('ingest') }}" data-task="ingest">
+        <input type="hidden" name="days" value="7">
+        <button type="submit" class="btn" {% if tasks.get('ingest') and tasks['ingest'].status == 'running' %}disabled{% endif %}>
+          {% if tasks.get('ingest') and tasks['ingest'].status == 'running' %}Searching hiring.cafe…{% else %}Search hiring.cafe{% endif %}
+        </button>
+      </form>
+      <span class="task-note" data-task-note="ingest">
+        {% if tasks.get('ingest') %}<a href="#" data-log="{{ tasks['ingest'].log }}">{{ tasks['ingest'].status }}</a>{% endif %}
+      </span>
+    </div>
+    <div class="action-pair">
+      <form method="post" action="{{ url_for('ingest_linkedin') }}" data-task="linkedin"
+            onsubmit="return confirm('Run a LinkedIn search? It drives a real browser session — use it deliberately, not repeatedly.');">
+        <button type="submit" class="btn" {% if tasks.get('linkedin') and tasks['linkedin'].status == 'running' %}disabled{% endif %}>
+          {% if tasks.get('linkedin') and tasks['linkedin'].status == 'running' %}Searching LinkedIn…{% else %}Search LinkedIn{% endif %}
+        </button>
+      </form>
+      <span class="task-note" data-task-note="linkedin">
+        {% if tasks.get('linkedin') %}<a href="#" data-log="{{ tasks['linkedin'].log }}">{{ tasks['linkedin'].status }}</a>{% endif %}
+      </span>
+    </div>
+  </section>
+</details>
 
 <details class="filters">
   <summary>Filter &amp; search</summary>
@@ -89,6 +106,7 @@
       <input type="number" name="min_score" value="{{ filters.min_score }}" placeholder="min score" min="1" max="10">
       <button type="submit" class="btn">Apply</button>
     </div>
+    <p class="score-legend">score <span class="sc-good">8+</span> shortlist · <span class="sc-mid">6–7</span> review · <span class="sc-bad">≤5</span> reject</p>
   </form>
 </details>
 
@@ -118,13 +136,15 @@
     {% endif %}
   </div>
 
+  {# when every rendered card shares one status the badge is pure repetition — drop it #}
+  {% set show_badge = (jobs | map(attribute='status') | unique | list | length) > 1 %}
   {% for job in jobs %}
     <div class="jobcard {% if job.starred %}is-starred{% endif %}">
       {{ scorechip(job.score) }}
       <div class="body">
         <div class="jobcard-head">
           <a class="company stretch" href="{{ url_for('job_detail', job_id=job.job_id) }}">{{ job.company }}</a>
-          <span class="badge st-{{ job.status }}">{{ job.status }}</span>
+          {% if show_badge %}<span class="badge st-{{ job.status }}">{{ job.status }}</span>{% endif %}
         </div>
         <div class="title">{{ job.title }}</div>
         <div class="meta">

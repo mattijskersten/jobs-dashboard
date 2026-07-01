@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import io
 import os
+import re
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -121,6 +122,8 @@ async def run_digest(request: Request):
         import markdown
 
         text = report.read_text(encoding="utf-8", errors="replace")
+        # the page header already says "Run <id>" — drop the digest's own H1
+        text = re.sub(r"^#\s[^\n]*\n+", "", text, count=1)
         digest_html = markdown.markdown(
             text, extensions=["extra", "sane_lists", "nl2br"]
         )

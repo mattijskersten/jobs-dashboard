@@ -83,7 +83,8 @@
     <div class="panel-body">
       <dl class="kv">
         {% for k in ['location','workplace_type','seniority','role_type','min_years_experience','commitment'] %}
-          {% if job.summary.get(k) %}<dt>{{ k.replace('_',' ') }}</dt><dd>{{ job.summary[k] }}</dd>{% endif %}
+          {% set v = job.summary.get(k) %}
+          {% if v %}<dt>{{ k.replace('_',' ') }}</dt><dd>{{ v | join(', ') if v is not string and v is iterable else v }}</dd>{% endif %}
         {% endfor %}
       </dl>
       {% if job.summary.get('requirements_summary') %}
@@ -104,13 +105,14 @@
 
   {% set ns = namespace(has_actions=false) %}
   {% for action, spec in actions.items() %}{% if job.status in spec[1] %}{% set ns.has_actions = true %}{% endif %}{% endfor %}
+  {% set action_labels = {'promote': 'Promote', 'reject': 'Reject', 'reopen': 'Reopen', 'applied': 'Mark applied'} %}
   {% if ns.has_actions or job.status == 'shortlisted' %}
   <div class="actionbar">
     {% for action, spec in actions.items() %}
       {% if job.status in spec[1] %}
       <form method="post" action="{{ url_for('job_action', job_id=job.job_id) }}">
         <input type="hidden" name="action" value="{{ action }}">
-        <button type="submit" class="btn act-{{ action }}">{{ action }}</button>
+        <button type="submit" class="btn act-{{ action }}">{{ action_labels.get(action, action) }}</button>
       </form>
       {% endif %}
     {% endfor %}

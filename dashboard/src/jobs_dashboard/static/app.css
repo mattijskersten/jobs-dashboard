@@ -28,14 +28,16 @@
   --radius: 13px;
   --radius-sm: 9px;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --card-shadow: none;       /* light scheme lifts cards off the paper */
 }
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #f3f1ec; --surface: #fbfaf7; --surface-2: #f0ede6; --raise: #e7e3d9;
-    --line: #ddd8cc; --line-soft: #e8e4da;
+    --line: #d3ccba; --line-soft: #e3ded1;
     --text: #1b1d22; --muted: #5d6470; --faint: #8a8f99;
     --brass: #9a7a34; --brass-dim: #b9a06a; --brass-glow: rgba(154,122,52,.12);
+    --card-shadow: 0 1px 3px rgba(43, 38, 24, .08), 0 1px 2px rgba(43, 38, 24, .05);
   }
 }
 
@@ -65,13 +67,25 @@ a { color: inherit; text-decoration: none; }
 }
 .home {
   font-family: var(--mono); font-weight: 600; font-size: 15px;
-  letter-spacing: .14em; text-transform: lowercase;
+  letter-spacing: .14em; text-transform: lowercase; white-space: nowrap;
   display: inline-flex; align-items: center; gap: 9px;
+}
+@media (max-width: 430px) {
+  .home { letter-spacing: .08em; font-size: 14px; }
+  .runchip { font-size: 10.5px; padding: 5px 8px; }
 }
 .home .mark {
   width: 11px; height: 11px; border-radius: 3px; rotate: 45deg;
   background: var(--brass); box-shadow: 0 0 0 4px var(--brass-glow);
 }
+/* latest-run chip: answers "did the nightly run do anything?" from the top bar */
+.runchip {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em;
+  color: var(--muted); padding: 6px 10px; white-space: nowrap;
+  border: 1px solid var(--line-soft); border-radius: 999px;
+}
+.runchip:hover { color: var(--brass); border-color: var(--brass-dim); }
+.runchip .warn { color: var(--mid); }
 main { padding: 16px 14px 28px; max-width: 720px; margin: 0 auto; }
 
 /* ============================================================
@@ -86,6 +100,7 @@ main { padding: 16px 14px 28px; max-width: 720px; margin: 0 auto; }
   display: flex; align-items: stretch; gap: 0;
   background: var(--surface); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 6px; overflow-x: auto;
+  box-shadow: var(--card-shadow);
 }
 .stage {
   flex: 1 1 0; min-width: 72px;
@@ -96,11 +111,17 @@ main { padding: 16px 14px 28px; max-width: 720px; margin: 0 auto; }
 .stage:hover { background: var(--surface-2); }
 .stage-n { font-family: var(--mono); font-size: 26px; font-weight: 600; line-height: 1; color: var(--text); }
 .stage-l { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.stage.active { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--brass-dim); }
+.stage.active {
+  background: color-mix(in srgb, var(--brass) 13%, var(--surface-2));
+  box-shadow: inset 0 0 0 1px var(--brass-dim);
+}
 .stage.active::before {
   content: ""; position: absolute; left: 10px; right: 10px; top: 0; height: 2px;
   background: var(--brass); border-radius: 2px;
 }
+/* empty stages recede so the numbers that matter carry the ribbon */
+.stage.zero:not(.active) .stage-n { color: var(--faint); font-weight: 400; }
+.stage.zero:not(.active) .stage-l { color: var(--faint); }
 .flow {
   align-self: center; color: var(--faint); font-family: var(--mono);
   padding: 0 2px; user-select: none; flex: 0 0 auto;
@@ -140,7 +161,18 @@ main { padding: 16px 14px 28px; max-width: 720px; margin: 0 auto; }
 .act-reject  { border-color: color-mix(in srgb, var(--bad) 50%, var(--line)); color: var(--bad); }
 .act-reject:hover { background: color-mix(in srgb, var(--bad) 16%, transparent); border-color: var(--bad); }
 
-/* ---------- ingest action bar ---------- */
+/* ---------- collection (folded away — an occasional action) ---------- */
+details.collect { margin: 0 0 16px; }
+details.collect > summary {
+  cursor: pointer; list-style: none; font-family: var(--mono); font-size: 12px;
+  letter-spacing: .08em; color: var(--muted); padding: 9px 12px;
+  border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
+  display: flex; align-items: center; gap: 8px;
+}
+details.collect > summary::-webkit-details-marker { display: none; }
+details.collect > summary::before { content: "◈"; color: var(--brass); }
+details.collect[open] > summary { margin-bottom: 10px; }
+
 .actions-bar { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
 .action-pair { display: flex; align-items: center; gap: 9px; flex: 1 1 250px; min-width: 0; }
 .action-pair form { flex: 1; min-width: 0; }
@@ -171,6 +203,10 @@ main { padding: 16px 14px 28px; max-width: 720px; margin: 0 auto; }
 }
 .filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .filter-row select, .filter-row input { flex: 1 1 96px; min-width: 0; }
+.score-legend {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .05em;
+  color: var(--faint); margin: 2px 2px 0;
+}
 
 /* ============================================================
    Score gutter (shared list + detail)
@@ -206,6 +242,7 @@ main { padding: 16px 14px 28px; max-width: 720px; margin: 0 auto; }
   display: flex; gap: 12px; align-items: stretch;
   background: var(--surface); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 13px 14px 13px 11px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow);
   transition: border-color .15s, transform .05s;
 }
 .jobcard:hover { border-color: var(--brass-dim); }
@@ -239,7 +276,13 @@ main { padding: 16px 14px 28px; max-width: 720px; margin: 0 auto; }
   font-size: 11px; color: var(--faint); letter-spacing: .03em;
 }
 .meta .on { color: var(--muted); }
-.rationale { color: var(--muted); font-size: 13px; margin-top: 9px; line-height: 1.45; }
+.rationale {
+  color: var(--muted); font-size: 13px; margin-top: 9px; line-height: 1.45;
+}
+/* on cards, two lines is a verdict — the full note lives on the detail page */
+.jobcard .rationale {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 
 /* track + status tags */
 .tag-track { color: var(--text); }
@@ -332,7 +375,7 @@ details.runs > summary::before { content: "▾ "; color: var(--brass); }
 .kv dt { color: var(--faint); font-size: 12px; letter-spacing: .04em; }
 .kv dd { margin: 0; }
 .reqs { color: var(--muted); font-size: 13.5px; white-space: pre-wrap; line-height: 1.5; margin-top: 10px; }
-details.panel { margin: 14px 0; border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; }
+details.panel { margin: 14px 0; border: 1px solid var(--line-soft); border-radius: var(--radius); overflow: hidden; box-shadow: var(--card-shadow); }
 details.panel > summary {
   cursor: pointer; list-style: none; padding: 13px 14px;
   font-family: var(--mono); font-size: 12.5px; letter-spacing: .06em; color: var(--text);
@@ -343,7 +386,7 @@ details.panel > summary::after { content: "+"; margin-left: auto; color: var(--b
 details.panel[open] > summary::after { content: "–"; }
 details.panel .panel-body { padding: 0 14px 14px; }
 .jd pre {
-  white-space: pre-wrap; word-wrap: break-word; font: 12.5px/1.55 var(--mono);
+  white-space: pre-wrap; word-wrap: break-word; font: 13.5px/1.55 var(--sans);
   color: var(--muted); max-height: 64vh; overflow: auto; margin: 0; padding-top: 12px;
 }
 .muted { color: var(--muted); }
@@ -369,7 +412,13 @@ details.panel .panel-body { padding: 0 14px 14px; }
 .digest a { color: var(--brass); }
 .digest code { font-family: var(--mono); background: var(--surface-2); padding: 1px 5px; border-radius: 5px; font-size: 12.5px; }
 .digest pre { background: var(--surface-2); padding: 12px; border-radius: var(--radius-sm); overflow: auto; }
-.digest table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+/* digest tables are wide (rationale columns) — scroll them, don't clip them */
+.digest table {
+  display: block; width: 100%; max-width: 100%; overflow-x: auto;
+  border-collapse: collapse; font-size: 13.5px; -webkit-overflow-scrolling: touch;
+}
+.digest td { min-width: 72px; }
+.digest td:nth-child(2), .digest th:nth-child(2) { min-width: 160px; }
 .digest th, .digest td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; }
 .digest th { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 
