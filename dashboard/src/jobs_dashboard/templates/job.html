@@ -45,7 +45,10 @@
            data-rc-status="{{ session.status if session else '' }}">
     <div class="panel-body">
       <span class="eyebrow">Refine CV</span>
-      <p class="muted small">Resume the original tailoring session to fine-tune this CV — continue here, on your phone, or in the Claude app.</p>
+      <p class="muted small">Resume the original tailoring session to fine-tune this CV — continue
+        {%- if job.tailoring_session_id %} <a href="#" class="cmd-copy"
+          data-cmd="cd {{ repo_root }} &amp;&amp; claude --resume {{ job.tailoring_session_id }}"
+          title="cd {{ repo_root }} &amp;&amp; claude --resume {{ job.tailoring_session_id }}">here</a>{% else %} here{% endif %} in your terminal, on your phone, or in the Claude app.</p>
       {% if job.tailoring_session_id %}
         {% if session and session.status in ['launching', 'live'] %}
           {% if session.status == 'live' and session.url %}

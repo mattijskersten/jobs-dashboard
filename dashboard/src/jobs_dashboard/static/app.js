@@ -51,6 +51,26 @@
     scheduleNext();
   }
 
+  // "continue here" in the Refine panel: copy the shell command to resume the
+  // tailoring session. Falls back to a selectable prompt in non-secure contexts
+  // (plain http over Tailscale), where navigator.clipboard is unavailable.
+  document.addEventListener("click", (ev) => {
+    const a = ev.target.closest("a.cmd-copy");
+    if (!a) return;
+    ev.preventDefault();
+    const cmd = a.getAttribute("data-cmd") || "";
+    const flash = () => {
+      const prev = a.textContent;
+      a.textContent = "copied ✓";
+      setTimeout(() => (a.textContent = prev), 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cmd).then(flash, () => window.prompt("Resume command:", cmd));
+    } else {
+      window.prompt("Resume command:", cmd);
+    }
+  });
+
   // show a log tail when a status link is tapped
   document.addEventListener("click", async (ev) => {
     const a = ev.target.closest("a[data-log]");

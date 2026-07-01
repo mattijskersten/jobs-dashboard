@@ -392,6 +392,7 @@ details.panel .panel-body { padding: 0 14px 14px; }
   border-radius: var(--radius-sm); display: block;
 }
 .rc-launching { font-family: var(--mono); font-size: 13px; color: var(--brass); }
+.refine a.cmd-copy { color: var(--brass); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }

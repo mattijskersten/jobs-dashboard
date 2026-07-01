@@ -92,6 +92,8 @@ async def job_detail(request: Request):
             "actions": db.ACTIONS,
             "tasks": tasks.snapshot(),
             "session": sessions.snapshot().get(job_id),
+            # for the "resume in your shell" command in the Refine panel
+            "repo_root": str(db.repo_root()),
         },
     )
 
