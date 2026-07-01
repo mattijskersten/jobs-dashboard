@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0e1014">
-  <title>{% block title %}pipeline{% endblock %}</title>
+  <title>{% block title %}Jobs Dashboard{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
 <body>
   <header class="topbar">
     <a class="home" href="{{ url_for('index') }}">
-      <span class="mark" aria-hidden="true"></span>pipeline
+      <span class="mark" aria-hidden="true"></span>Jobs Dashboard
     </a>
     {% block headeractions %}{% endblock %}
   </header>
