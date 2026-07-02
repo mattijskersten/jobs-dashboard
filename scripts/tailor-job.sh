@@ -5,7 +5,8 @@
 #
 # Reads company + JD path from data/jobs.db, runs a fresh `claude -p` session
 # that writes "data/cvs/cv <Candidate> $COMPANY.md" + PDF (the candidate name is
-# read from data/cv.md's front matter), then stores the session id and CV paths
+# read from data/cv.md's front matter; the job title is appended when the
+# company has other CV-bearing jobs), then stores the session id and CV paths
 # back in the job's row (status → tailored).
 # The stored session id can be resumed later: claude --resume <session_id>
 set -euo pipefail
@@ -36,6 +37,24 @@ CANDIDATE=$(sed -n 's/^name:[[:space:]]*//p' "$ROOT/data/cv.md" 2>/dev/null | he
 # Company name as a filename label (shared rule: scripts/sanitize.py)
 LABEL=$(python3 "$ROOT/scripts/sanitize.py" "$COMPANY")
 if [ -n "$CANDIDATE" ]; then BASE="cv $CANDIDATE $LABEL"; else BASE="cv $LABEL"; fi
+
+# One company can have several live roles (e.g. two openings at one company); a
+# company-only filename would make them clobber each other's CV. When another
+# CV-bearing job at the same company exists, append the job title — the file
+# name stays human-readable for uploading straight into application forms.
+# If even the title matches another live role, fall back to the job id.
+ESC_COMPANY=$(printf '%s' "$COMPANY" | sed "s/'/''/g")
+ESC_TITLE=$(printf '%s' "$TITLE" | sed "s/'/''/g")
+DUP=$(sqlite3 "$DB" "SELECT count(*) FROM jobs
+  WHERE company = '$ESC_COMPANY' AND job_id != '$JOB_ID'
+    AND status IN ('shortlisted', 'tailored', 'applied');")
+if [ "$DUP" -gt 0 ]; then
+  BASE="$BASE $(python3 "$ROOT/scripts/sanitize.py" "$TITLE")"
+  SAME_TITLE=$(sqlite3 "$DB" "SELECT count(*) FROM jobs
+    WHERE company = '$ESC_COMPANY' AND title = '$ESC_TITLE' AND job_id != '$JOB_ID'
+      AND status IN ('shortlisted', 'tailored', 'applied');")
+  [ "$SAME_TITLE" -gt 0 ] && BASE="$BASE $JOB_ID"
+fi
 CV_MD="data/cvs/$BASE.md"
 CV_PDF="data/cvs/$BASE.pdf"
 

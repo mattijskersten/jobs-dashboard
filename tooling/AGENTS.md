@@ -45,7 +45,10 @@ Requires: `pandoc`, `xelatex` (texlive-xetex), Carlito font (pre-installed).
 In this repo, pipeline-generated artifacts live under `data/` (gitignored):
 - Job descriptions: `data/jds/JD $COMPANY $JOBID.txt` (the hiring.cafe job id is
   in the filename — one company can have several open roles)
-- Tailored CVs: `data/cvs/cv <Candidate> $COMPANY.md` + `.pdf`
+- Tailored CVs: `data/cvs/cv <Candidate> $COMPANY.md` + `.pdf` (`tailor-job.sh`
+  appends ` $TITLE` when the company has more than one CV-bearing job — kept
+  human-readable so the file can be uploaded to application forms as-is; the
+  job id is added only if even the title collides)
 
 ---
 
