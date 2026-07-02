@@ -306,7 +306,7 @@ def run() -> None:
 
     uvicorn.run(
         "jobs_dashboard.app:app",
-        host=os.environ.get("JOBS_DASHBOARD_HOST", "0.0.0.0"),
+        host=os.environ.get("JOBS_DASHBOARD_HOST", "127.0.0.1"),
         port=int(os.environ.get("JOBS_DASHBOARD_PORT", "8765")),
     )
 

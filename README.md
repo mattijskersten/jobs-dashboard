@@ -112,13 +112,24 @@ terminal. The funnel ribbon multi-selects: tap stages to toggle them on/off.
 
 ```sh
 cd dashboard && uv sync && cd ..
-scripts/dashboard.sh            # binds 0.0.0.0:8765 (JOBS_DASHBOARD_PORT to change)
+scripts/dashboard.sh            # binds 127.0.0.1:8765 (JOBS_DASHBOARD_PORT to change)
 ```
 
-Reach it from your phone over **Tailscale** at `http://<tailscale-name>:8765`
-(the Crostini container's localhost isn't directly LAN-visible). For an always-on
+Reach it from your phone over **Tailscale Serve**: with `tailscaled` on this
+machine and the node joined to your tailnet (`sudo tailscale up --hostname=<node>`),
+run once:
+
+```sh
+sudo tailscale serve --bg --https=443 http://127.0.0.1:8765
+```
+
+and open `https://<node>.<tailnet>.ts.net` — tailnet-only, with a real TLS cert
+(which also makes the Refine panel's copy-command link work; the clipboard API
+needs a secure context). The serve config persists across reboots. Never use
+`tailscale funnel` here — Funnel is the public internet. For an always-on
 service, install the optional user unit `dashboard/jobs-dashboard.service` (it has
-its own install notes at the top).
+its own install notes at the top). In the Tailscale admin console, disable key
+expiry for the node so it doesn't drop off the tailnet after ~180 days.
 
 > ⚠️ The dashboard is **unauthenticated by design** — Tailscale is the security
 > boundary. It writes the database and shells out to `claude` for tailoring, so
