@@ -14,7 +14,8 @@ DB="$ROOT/data/jobs.db"
 JOB_ID="${1:?usage: tailor-job.sh <job_id>}"
 
 row=$(sqlite3 -separator $'\t' "$DB" \
-  "SELECT company, title, jd_path FROM jobs WHERE job_id = '$JOB_ID' AND status = 'shortlisted';")
+  "SELECT company, title, jd_path, COALESCE(score, ''), COALESCE(rationale, '')
+   FROM jobs WHERE job_id = '$JOB_ID' AND status = 'shortlisted';")
 if [ -z "$row" ]; then
   echo "ERROR: job $JOB_ID not found or not shortlisted" >&2
   exit 1
@@ -22,6 +23,8 @@ fi
 COMPANY=$(printf '%s' "$row" | cut -f1)
 TITLE=$(printf '%s' "$row" | cut -f2)
 JD_PATH=$(printf '%s' "$row" | cut -f3)
+SCORE=$(printf '%s' "$row" | cut -f4)
+RATIONALE=$(printf '%s' "$row" | cut -f5-)
 if [ ! -f "$ROOT/$JD_PATH" ]; then
   echo "ERROR: JD file missing for $JOB_ID: $JD_PATH" >&2
   exit 1
@@ -53,18 +56,27 @@ for r in ${refs[@]+"${refs[@]}"}; do REF_LIST+="\"$r\", "; done
 REF_LIST="${REF_LIST%, }"
 [ -z "$REF_LIST" ] && REF_LIST="(no worked examples available)"
 
-PROMPT="Tailor the CV in data/cv.md for one job application. Work strictly by the rules in tooling/AGENTS.md (read it first).
+# Title/company are echoed inside the prompt near quoted paths — strip
+# characters that would garble that quoting (filenames use LABEL, not these).
+P_TITLE=$(printf '%s' "$TITLE" | tr -d '"\\')
+P_COMPANY=$(printf '%s' "$COMPANY" | tr -d '"\\')
+if [ -n "$SCORE" ] || [ -n "$RATIONALE" ]; then
+  TRIAGE_LINE="Triage shortlisted it${SCORE:+ scoring $SCORE/10}${RATIONALE:+: $RATIONALE}"
+else
+  TRIAGE_LINE="(no triage score/rationale recorded)"
+fi
 
-Job: $TITLE at $COMPANY
+PROMPT="Tailor the CV in data/cv.md for one job application.
+
+Job: $P_TITLE at $P_COMPANY
+$TRIAGE_LINE
 Job description: read it from \"$JD_PATH\" (do not search for the posting online; the file is the source of truth).
 
-Steps:
-1. Read tooling/AGENTS.md, then the JD, then data/cv.md, then these worked example CVs as style references: $REF_LIST. Read only those as references.
-2. Before drafting anything, write out the 3-5 most important themes from the JD — its top requirements, the seniority/scope signals (org size, revenue, stage), the domain emphasis, and the terminology it repeats (to mirror where truthful). This is the brief; every choice in the next step must serve it.
-3. Write the tailored CV to \"$CV_MD\" following the conventions and tailoring scope in tooling/AGENTS.md exactly, leading with the themes from step 2 (most relevant content first).
-4. Build the PDF: tooling/build.sh \"$CV_MD\" \"$CV_PDF\"
-5. Check page count with pdfinfo; target 2 pages, tighten and rebuild if 3.
-6. Finish with a short report: the themes you committed to in step 2 and the main changes you made to serve them and why."
+Read tooling/AGENTS.md first and follow its Tailoring workflow — all 7 steps, including the keyword-coverage check and the rendered-PDF skim. Per-job specifics:
+- Style-reference CVs for step 1: $REF_LIST. Read only those as references.
+- Write the tailored CV to \"$CV_MD\".
+- Build the PDF with: tooling/build.sh \"$CV_MD\" \"$CV_PDF\". If it runs over 2 pages, tighten and rebuild until it fits.
+- Before the final report, confirm every claim in the tailored CV traces back to data/cv.md or a reference CV; fix anything that doesn't."
 
 cd "$ROOT"
 set +e
