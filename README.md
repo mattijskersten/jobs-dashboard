@@ -3,7 +3,7 @@
 CV-driven job search agent. A nightly pipeline searches
 [hiring.cafe](https://hiring.cafe) for senior roles matching the two tracks you
 define in `data/search-profile.md`, triages them against that profile, tailors
-your CV for the best matches in parallel headless Claude sessions, and writes a
+your CV for the best matches in sequential headless Claude sessions, and writes a
 standalone digest. All state lives in a SQLite database designed to back a
 future dashboard.
 
@@ -192,6 +192,9 @@ Then **`/pipeline`** processes the queue (source-agnostic):
 2. **Tailor** — every `shortlisted` job (new or promoted), capped at the 5
    highest-scoring per run. Each runs as its own headless `claude` session so
    it is independently resumable; the session id is stored on the job row.
+   Sessions run one at a time — sequential launches let each session read the
+   shared-prefix prompt cache the previous one wrote, instead of all paying
+   the cache-write premium at once.
    Outputs are drafts for review, built to PDF via `tooling/build.sh` under the
    rules in `tooling/AGENTS.md`.
 3. **Report** — digest to `data/reports/run-<id>-<date>.md`: new jobs with

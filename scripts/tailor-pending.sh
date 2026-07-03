@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Tailor all shortlisted jobs, highest score first, capped at 5 per run,
-# in parallel headless `claude` sessions. Prints one line per job; failures
-# are reported but do not abort the batch.
+# in sequential headless `claude` sessions — one at a time, so each session
+# after the first reads the shared-prefix prompt cache its predecessor wrote
+# (parallel launches all raced past the cache and paid ~5x the writes).
+# Prints one line per job; failures are reported but do not abort the batch.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DB="$ROOT/data/jobs.db"
@@ -19,15 +21,9 @@ if [ "${#IDS[@]}" -eq 0 ]; then
 fi
 
 echo "tailoring ${#IDS[@]} job(s): ${IDS[*]}"
-pids=()
-for id in "${IDS[@]}"; do
-  "$ROOT/scripts/tailor-job.sh" "$id" &
-  pids+=($!)
-done
-
 fail=0
-for pid in "${pids[@]}"; do
-  wait "$pid" || fail=$((fail + 1))
+for id in "${IDS[@]}"; do
+  "$ROOT/scripts/tailor-job.sh" "$id" || fail=$((fail + 1))
 done
 
 echo "done: $(( ${#IDS[@]} - fail )) tailored, $fail failed"

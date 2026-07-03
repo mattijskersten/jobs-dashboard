@@ -72,7 +72,8 @@ Run: `scripts/tailor-pending.sh 5`
 
 It picks every `shortlisted` job — auto-shortlisted just now or promoted from
 needs-review earlier — capped at the 5 highest-scoring, and tailors each in
-its own headless `claude` session in parallel, storing CV paths and the
+its own headless `claude` session, run sequentially (one at a time, so each
+session reuses the previous one's prompt cache), storing CV paths and the
 session id in the row. Capture its stdout/stderr for the digest. Jobs over the
 cap stay `shortlisted` for the next run; failed jobs also stay `shortlisted`
 and are reported as errors.
