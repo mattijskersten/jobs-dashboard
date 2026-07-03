@@ -19,7 +19,9 @@ WorkingDirectory=%h/projects/jobs-dashboard
 ExecStart=%h/projects/jobs-dashboard/scripts/dashboard.sh
 Restart=on-failure
 RestartSec=5
-# Tailoring spawns `claude`, which needs the user's PATH/credentials.
+# systemd user units get a minimal PATH; `uv` and `claude` (spawned for
+# tailoring/refine) typically live in ~/.local/bin — prepend it.
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
 Environment=JOBS_DASHBOARD_PORT=8765
 
 [Install]
