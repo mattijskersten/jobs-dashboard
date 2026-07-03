@@ -97,7 +97,7 @@ Or as a systemd user timer, point `ExecStart` at the same script.
 - **Fine-tune a tailored CV** by resuming its dedicated session:
 
   ```sh
-  claude --resume "$(sqlite3 data/jobs.db "SELECT tailoring_session_id FROM jobs WHERE company LIKE '%Acme%';")"
+  claude --model fable --resume "$(sqlite3 data/jobs.db "SELECT tailoring_session_id FROM jobs WHERE company LIKE '%Acme%';")"
   ```
 
 ## Dashboard

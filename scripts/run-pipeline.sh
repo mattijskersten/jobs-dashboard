@@ -38,4 +38,7 @@ set -e
 cat "$INGEST_LOG"
 
 cd "$ROOT"
-claude -p "/pipeline${*:+ $*}" --output-format text
+# Triage runs on opus; tailoring is pinned to fable in tailor-job.sh. Pinned
+# explicitly so the pipeline doesn't silently follow whatever personal default
+# ~/.claude/settings.json happens to hold.
+claude -p "/pipeline${*:+ $*}" --model opus --output-format text
