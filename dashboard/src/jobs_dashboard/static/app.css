@@ -160,6 +160,8 @@ main { padding: 16px 14px 28px; max-width: 720px; margin: 0 auto; }
 .act-promote:hover { background: color-mix(in srgb, var(--good) 16%, transparent); border-color: var(--good); }
 .act-reject  { border-color: color-mix(in srgb, var(--bad) 50%, var(--line)); color: var(--bad); }
 .act-reject:hover { background: color-mix(in srgb, var(--bad) 16%, transparent); border-color: var(--bad); }
+.act-close   { color: var(--muted); }
+.act-close:hover { border-color: var(--muted); }
 
 /* ---------- collection (folded away — an occasional action) ---------- */
 details.collect { margin: 0 0 16px; }
@@ -297,7 +299,7 @@ details.collect[open] > summary { margin-bottom: 10px; }
 .st-needs-review { color: var(--mid); border-color: color-mix(in srgb, var(--mid) 45%, var(--line)); }
 .st-shortlisted { color: var(--brass); border-color: var(--brass-dim); }
 .st-tailored, .st-applied { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
-.st-rejected { color: var(--faint); }
+.st-rejected, .st-closed { color: var(--faint); }
 
 .empty {
   border: 1px dashed var(--line); border-radius: var(--radius);

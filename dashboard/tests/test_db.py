@@ -53,6 +53,46 @@ def test_reject_reopen_roundtrip(root):
     assert changed and status_of("short-1") == "needs-review"
 
 
+def test_close_from_tailored_and_reopen_restores_tailored(root):
+    # tail-1 has a CV on file, so reopening a closed job restores 'tailored'
+    with sqlite3.connect(root / "data" / "jobs.db") as conn:
+        conn.execute(
+            "UPDATE jobs SET cv_pdf_path = 'data/cvs/cv X Initech.pdf'"
+            " WHERE job_id = 'tail-1'"
+        )
+    changed, _ = db.apply_action("tail-1", "close")
+    assert changed and status_of("tail-1") == "closed"
+    changed, message = db.apply_action("tail-1", "reopen")
+    assert changed and status_of("tail-1") == "tailored"
+    assert "tailored" in message
+
+
+def test_close_and_reopen_without_cv_goes_to_needs_review(root):
+    changed, _ = db.apply_action("short-1", "close")
+    assert changed and status_of("short-1") == "closed"
+    changed, _ = db.apply_action("short-1", "reopen")
+    assert changed and status_of("short-1") == "needs-review"
+
+
+def test_close_refused_from_applied_and_rejected(root):
+    db.apply_action("tail-1", "applied")
+    for job_id in ("tail-1", "rej-1"):
+        changed, _ = db.apply_action(job_id, "close")
+        assert not changed
+
+
+def test_reopen_from_rejected_still_goes_to_needs_review(root):
+    # a rejected job with a CV path must NOT reopen to tailored — the
+    # tailored-restore shortcut is for closed jobs only
+    with sqlite3.connect(root / "data" / "jobs.db") as conn:
+        conn.execute(
+            "UPDATE jobs SET cv_pdf_path = 'data/cvs/cv X Hooli.pdf'"
+            " WHERE job_id = 'rej-1'"
+        )
+    changed, _ = db.apply_action("rej-1", "reopen")
+    assert changed and status_of("rej-1") == "needs-review"
+
+
 def test_applied_only_from_tailored(root):
     changed, _ = db.apply_action("tail-1", "applied")
     assert changed and status_of("tail-1") == "applied"

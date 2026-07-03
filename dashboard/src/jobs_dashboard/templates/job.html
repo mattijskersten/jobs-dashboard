@@ -105,7 +105,7 @@
 
   {% set ns = namespace(has_actions=false) %}
   {% for action, spec in actions.items() %}{% if job.status in spec[1] %}{% set ns.has_actions = true %}{% endif %}{% endfor %}
-  {% set action_labels = {'promote': 'Promote', 'reject': 'Reject', 'reopen': 'Reopen', 'applied': 'Mark applied'} %}
+  {% set action_labels = {'promote': 'Promote', 'reject': 'Reject', 'close': 'Posting closed', 'reopen': 'Reopen', 'applied': 'Mark applied'} %}
   {% if ns.has_actions or job.status == 'shortlisted' %}
   <div class="actionbar">
     {% for action, spec in actions.items() %}

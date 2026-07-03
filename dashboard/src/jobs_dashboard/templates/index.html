@@ -41,6 +41,10 @@
        aria-pressed="{{ 'true' if 'rejected' in active else 'false' }}">
       <span class="stage-n">{{ overview.status_counts.get('rejected', 0) }}</span><span class="stage-l">rejected</span>
     </a>
+    <a class="stage {% if 'closed' in active %}active{% endif %}" href="{{ stage_href('closed') }}"
+       aria-pressed="{{ 'true' if 'closed' in active else 'false' }}">
+      <span class="stage-n">{{ overview.status_counts.get('closed', 0) }}</span><span class="stage-l">closed</span>
+    </a>
     <a class="stage starfilter {% if filters.starred %}active{% endif %}"
        href="{% if filters.starred %}{{ url_for('index') }}?status={{ filters.status }}{{ extra }}{% else %}{{ url_for('index') }}?status={{ filters.status }}&starred=1{{ extra }}{% endif %}"
        aria-pressed="{{ 'true' if filters.starred else 'false' }}">

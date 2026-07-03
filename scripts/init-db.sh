@@ -25,4 +25,60 @@ if ! sqlite3 "$ROOT/data/jobs.db" "PRAGMA table_info(jobs);" | grep -q "|starred
   sqlite3 "$ROOT/data/jobs.db" "ALTER TABLE jobs ADD COLUMN starred INTEGER NOT NULL DEFAULT 0;"
 fi
 
+# 'closed' status: SQLite cannot alter a CHECK constraint, so tables created
+# before it was added must be rebuilt. One transaction: create the new table
+# (DDL matches schema.sql — keep in sync), copy rows, swap. Runs after the
+# column migrations above so every copied column is guaranteed to exist.
+if ! sqlite3 "$ROOT/data/jobs.db" \
+     "SELECT sql FROM sqlite_master WHERE type='table' AND name='jobs';" \
+     | grep -q "'closed'"; then
+  sqlite3 -bail "$ROOT/data/jobs.db" <<'SQL'
+BEGIN IMMEDIATE;
+CREATE TABLE jobs_new (
+    job_id              TEXT PRIMARY KEY,
+    company             TEXT NOT NULL,
+    title               TEXT NOT NULL,
+    url                 TEXT,
+    apply_url           TEXT,
+    track               TEXT CHECK (track IN ('A', 'B')),
+    source              TEXT NOT NULL DEFAULT 'hiringcafe'
+                        CHECK (source IN ('hiringcafe', 'linkedin', 'manual')),
+    status              TEXT NOT NULL DEFAULT 'seen'
+                        CHECK (status IN ('seen','triaged','needs-review',
+                                          'shortlisted','tailored','applied','rejected',
+                                          'closed')),
+    score               INTEGER CHECK (score BETWEEN 1 AND 10),
+    starred             INTEGER NOT NULL DEFAULT 0,
+    rationale           TEXT,
+    posted_date         TEXT,
+    summary_json        TEXT,
+    jd_path             TEXT,
+    cv_md_path          TEXT,
+    cv_pdf_path         TEXT,
+    tailoring_session_id TEXT,
+    first_seen_run_id   INTEGER REFERENCES runs(run_id),
+    date_seen           TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+INSERT INTO jobs_new (job_id, company, title, url, apply_url, track, source,
+                      status, score, starred, rationale, posted_date,
+                      summary_json, jd_path, cv_md_path, cv_pdf_path,
+                      tailoring_session_id, first_seen_run_id, date_seen,
+                      created_at, updated_at)
+  SELECT job_id, company, title, url, apply_url, track, source,
+         status, score, starred, rationale, posted_date,
+         summary_json, jd_path, cv_md_path, cv_pdf_path,
+         tailoring_session_id, first_seen_run_id, date_seen,
+         created_at, updated_at
+  FROM jobs;
+DROP TABLE jobs;
+ALTER TABLE jobs_new RENAME TO jobs;
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+CREATE INDEX IF NOT EXISTS idx_jobs_score  ON jobs(score);
+COMMIT;
+SQL
+  echo "migrated: jobs table rebuilt to allow status 'closed'"
+fi
+
 echo "ok: $ROOT/data/jobs.db"

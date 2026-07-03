@@ -17,17 +17,24 @@ from typing import Any
 
 # Active funnel statuses, in the order a job moves through them. (The schema
 # CHECK also still accepts a legacy 'triaged' value nothing writes anymore.)
+# 'rejected' = I judged it a bad fit; 'closed' = the posting was retired
+# before I could apply — kept distinct so closed jobs don't pollute the
+# rejected bucket when reviewing triage quality.
 STATUS_ORDER = [
-    "seen", "needs-review", "shortlisted", "tailored", "applied", "rejected",
+    "seen", "needs-review", "shortlisted", "tailored", "applied",
+    "rejected", "closed",
 ]
 
 # action -> (new_status, {statuses it may be applied from})
-# Canonical transition table; scripts/promote.sh mirrors the promote/reject
-# rules for needs-review rows — keep them in sync.
+# Canonical transition table; scripts/promote.sh mirrors these rules for the
+# CLI (promote/reject/close) — keep them in sync. Note: reopening a closed
+# job that already has a tailored CV restores 'tailored', not 'needs-review'
+# (special-cased in apply_action).
 ACTIONS: dict[str, tuple[str, set[str]]] = {
     "promote": ("shortlisted", {"needs-review"}),
     "reject": ("rejected", {"needs-review", "shortlisted", "seen"}),
-    "reopen": ("needs-review", {"rejected"}),
+    "close": ("closed", {"needs-review", "shortlisted", "tailored"}),
+    "reopen": ("needs-review", {"rejected", "closed"}),
     "applied": ("applied", {"tailored"}),
 }
 
@@ -157,17 +164,28 @@ def apply_action(job_id: str, action: str) -> tuple[bool, str]:
     if action not in ACTIONS:
         return False, f"unknown action: {action}"
     new_status, allowed_from = ACTIONS[action]
+    # Reopening a closed job that already carries a tailored CV puts it back
+    # where it was (tailored), not at the review stage — the CV still exists.
+    set_expr = "?"
+    if action == "reopen":
+        set_expr = (
+            "CASE WHEN status = 'closed' AND cv_pdf_path IS NOT NULL"
+            " THEN 'tailored' ELSE ? END"
+        )
     placeholders = ",".join("?" * len(allowed_from))
     with connect() as conn:
         cur = conn.execute(
-            f"UPDATE jobs SET status = ?, updated_at = datetime('now')"
+            f"UPDATE jobs SET status = {set_expr}, updated_at = datetime('now')"
             f" WHERE job_id = ? AND status IN ({placeholders})",
             (new_status, job_id, *sorted(allowed_from)),
         )
         conn.commit()
         changed = cur.rowcount > 0
-    if changed:
-        return True, f"{action} → {new_status}"
+        if changed:
+            row = conn.execute(
+                "SELECT status FROM jobs WHERE job_id = ?", (job_id,)
+            ).fetchone()
+            return True, f"{action} → {row['status']}"
     return False, f"job not in a state that allows '{action}'"
 
 

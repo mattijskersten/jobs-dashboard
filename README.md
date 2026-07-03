@@ -76,7 +76,8 @@ Or as a systemd user timer, point `ExecStart` at the same script.
 - Read the latest digest in `data/reports/`.
 - `/promote <job_id|company>` (or `scripts/promote.sh <job_id>`) moves a
   needs-review job to shortlisted; the next run tailors it. Add `reject` to
-  reject instead. `scripts/tailor-pending.sh` tailors immediately.
+  reject instead, or `close` to retire a job whose posting vanished (see **Job
+  statuses**). `scripts/tailor-pending.sh` tailors immediately.
 - **Search hiring.cafe** with `/ingest-hiringcafe` (or `scripts/ingest.sh
   --days N`): runs the standard mechanical passes and lands new jobs as `seen`
   rows for the next `/pipeline` to triage. This is the same collection the
@@ -104,8 +105,8 @@ Or as a systemd user timer, point `ExecStart` at the same script.
 A mobile-first web UI over `data/jobs.db` for reviewing the funnel from your
 phone: browse and filter jobs, read JDs, preview tailored CV PDFs inline, read
 each run's digest (the runs table on the overview links to `/run/{id}`, which
-renders `data/reports/run-*.md`), change job state (promote / reject / reopen /
-mark applied), **star a job to prioritise it** (starred jobs float to the top of
+renders `data/reports/run-*.md`), change job state (promote / reject / close /
+reopen / mark applied), **star a job to prioritise it** (starred jobs float to the top of
 every list and have their own filter, independent of pipeline stage), and trigger
 a hiring.cafe ingest or kick off tailoring for a shortlisted job — all without a
 terminal. The funnel ribbon multi-selects: tap stages to toggle them on/off.
@@ -206,3 +207,12 @@ Then **`/pipeline`** processes the queue (source-agnostic):
 `seen` is transient; triage moves rows to `shortlisted` (≥ 8, or promoted),
 `needs-review` (6–7), or `rejected` (≤ 5, or failed a hard filter), then move
 to `tailored` and eventually `applied` (manual).
+
+A second off-ramp, `closed`, retires a job the world took away — the posting
+was withdrawn or filled before you could apply. It's kept distinct from
+`rejected` (your judgment call) so the rejected bucket stays meaningful for
+reviewing triage quality. Close a job from the dashboard (**Posting closed**)
+or with `scripts/promote.sh <job_id> close`; it's allowed from `needs-review`,
+`shortlisted`, or `tailored`, and the tailored CV artifacts stay on disk.
+**Reopen** on a closed job restores `tailored` if a CV exists, else
+`needs-review` — so a reposted role picks up where it left off.
