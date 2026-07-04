@@ -38,7 +38,8 @@ set -e
 cat "$INGEST_LOG"
 
 cd "$ROOT"
-# Triage runs on opus; tailoring is pinned to fable in tailor-job.sh. Pinned
-# explicitly so the pipeline doesn't silently follow whatever personal default
-# ~/.claude/settings.json happens to hold.
-claude -p "/pipeline${*:+ $*}" --model opus --output-format text
+# Triage runs on opus at medium effort — the work is mechanical; tailoring is
+# pinned to fable/high in tailor-job.sh. Both pinned explicitly so the pipeline
+# doesn't silently follow whatever personal defaults ~/.claude/settings.json
+# happens to hold.
+claude -p "/pipeline${*:+ $*}" --model opus --effort medium --output-format text

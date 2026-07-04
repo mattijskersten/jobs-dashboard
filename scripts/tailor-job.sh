@@ -99,9 +99,9 @@ Read tooling/AGENTS.md first and follow its Tailoring workflow — all 7 steps, 
 
 cd "$ROOT"
 set +e
-# CV writing is pinned to fable, the strongest model — tailoring quality is
-# what lands interviews. Triage runs on opus (see run-pipeline.sh).
-OUT=$(claude -p "$PROMPT" --model fable --output-format json 2>"$ROOT/data/reports/.tailor-$JOB_ID.err")
+# CV writing is pinned to fable at high effort, the strongest setup — tailoring
+# quality is what lands interviews. Triage runs on opus/medium (run-pipeline.sh).
+OUT=$(claude -p "$PROMPT" --model fable --effort high --output-format json 2>"$ROOT/data/reports/.tailor-$JOB_ID.err")
 RC=$?
 set -e
 

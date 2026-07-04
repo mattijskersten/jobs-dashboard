@@ -139,11 +139,11 @@ def launch(job_id: str) -> tuple[bool, str, Session | None]:
         if existing and existing.status in ("launching", "live"):
             return True, "session already running", existing
 
-        # Pin the model: refining continues CV work, so it runs on fable like
-        # tailor-job.sh — a bare --resume would follow the personal default
-        # in ~/.claude/settings.json instead.
+        # Pin model and effort: refining continues CV work, so it runs on
+        # fable at high effort like tailor-job.sh — a bare --resume would
+        # follow the personal defaults in ~/.claude/settings.json instead.
         argv = ["claude", "--resume", session_id, "--model", "fable",
-                "--remote-control", "--name", name]
+                "--effort", "high", "--remote-control", "--name", name]
         pid, fd = pty.fork()
         if pid == 0:
             # child: become the resumed session in the repo root, then exec.
