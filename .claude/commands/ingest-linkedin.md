@@ -41,47 +41,45 @@ For every call to `mcp__linkedin__search_jobs` use:
 
 `search_jobs` returns `{ job_ids: [...], sections: {name -> raw text}, url }`.
 Parse the raw `sections` text into one record per `job_id`:
-`{ title, company, location, posted }`. The canonical id is the numeric
-`job_id`; the posting URL is `https://www.linkedin.com/jobs/view/<job_id>/`.
+`{ id, title, company, location, posted, track }` — `id` is the numeric
+`job_id`, `track` is `A` for the product searches and `B` for the IT searches.
+This parsing (messy text → structured records) is your only job with the
+results; the dedup and insert are **not** yours to reason through — hand the
+records to the script below, which owns them deterministically.
 
-## 2. De-dupe, then land each hit as `seen`
+## 2. De-dupe + land as `seen` — via `scripts/ingest-linkedin.py`
 
-Load what is already known:
-`sqlite3 -json data/jobs.db "SELECT job_id, company, title FROM jobs;"`
+Collect the parsed records from **all** searches into one JSON array and pipe it
+to the script. It loads what is already known, applies the fixed dedup rule, and
+inserts survivors as `status = 'seen'`, `first_seen_run_id = NULL`:
 
-For each parsed LinkedIn record, in order, **write it immediately** (don't hold
-the whole batch in memory) unless it is a duplicate:
+```
+echo '<json-array-of-records>' | scripts/ingest-linkedin.py
+```
 
-1. **Exact:** skip if `job_id = 'linkedin-<id>'` already exists.
+Each record is `{"id","title","company","location","posted","track"}`. Pass
+`posted` verbatim (e.g. `"13 hours ago"`, `"5 days ago"`, or a real date); the
+script keeps `posted_date` only when it parses to an ISO date and leaves it NULL
+otherwise. Do **not** write your own `INSERT`s or `sqlite3` dedup queries — the
+script (and its shared logic in `scripts/dedup.py`, pinned by
+`scripts/test_dedup.py`) is the single source of truth so LinkedIn dedups the
+same way on every run.
+
+The dedup rule the script enforces, for reference:
+
+1. **Exact:** skip if `job_id = 'linkedin-<id>'` already exists (also collapses
+   a job returned by more than one search).
 2. **Cross-source:** skip if an existing row (e.g. from hiring.cafe) is the same
-   role — same *normalized* company and a similar title. Normalize by
-   lowercasing and stripping punctuation and company suffixes (inc/ltd/gmbh/
-   sp z o o…); for titles also drop remote/hybrid/city words. Treat title
-   similarity ≳ 0.6 as a match. Log every skip with the matched existing job.
+   role — identical *normalized* company and title Jaccard ≥ 0.6. It cannot
+   catch recruiter-fronted listings that hide the real employer; those survive.
 
-Insert survivors (escape `'` as `''`):
-
-```
-INSERT OR IGNORE INTO jobs
-  (job_id, company, title, url, apply_url, track, status, posted_date,
-   summary_json, first_seen_run_id)
-VALUES ('linkedin-<id>', '<company>', '<title>',
-   'https://www.linkedin.com/jobs/view/<id>/',
-   'https://www.linkedin.com/jobs/view/<id>/', '<A|B>', 'seen',
-   <posted_date-or-NULL>, '<summary_json>', NULL);
-```
-
-`summary_json` must be valid JSON:
-`{"source":"linkedin","linkedin_id":"<id>","title":...,"company":...,`
-`"location":...,"posted":...,"url":...}`. Set `posted_date` only if `posted`
-gives a real date; LinkedIn often shows "2 weeks ago" — leave NULL then.
-`track` = A for the product searches, B for the IT searches.
+Capture the script's stdout — it reports counts and names every skip and insert.
 
 ## 3. Report
 
-Print a short summary: number of searches run, total hits, how many were new
-(inserted), how many skipped as exact or cross-source duplicates (name the
-matched job for cross-source skips), and a table of the **new** rows
-(company, title, track, location, url). End by reminding the user these are
+Print a short summary from the script's stdout: number of searches run, total
+hits, how many were new (inserted), how many skipped as exact or cross-source
+duplicates (name the matched job for cross-source skips), and a table of the
+**new** rows (company, title, track, location, url). End by reminding the user these are
 `seen` rows that the next `/pipeline` run will triage, fetch JDs for (≥6), and
 tailor (≥8). Do not open or finalize a `runs` row — this is a collection step.
