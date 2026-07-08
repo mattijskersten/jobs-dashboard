@@ -22,8 +22,6 @@
       "Bash(date*)"
     ],
     "deny": [
-      "WebFetch",
-      "WebSearch",
       "mcp__linkedin__connect_with_person"
     ]
   }
