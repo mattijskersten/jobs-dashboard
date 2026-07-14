@@ -114,7 +114,7 @@ def _summarize_hit(hit: dict[str, Any], variant_count: int = 1) -> dict[str, Any
         "commitment": v5.get("commitment"),
         "requirements_summary": v5.get("requirements_summary"),
         "tech_stack": (v5.get("technical_tools") or [])[:12],
-        "url": f"https://hiring.cafe/job/{hit.get('requisition_id')}",
+        "url": f"https://hiringcafe.com/job/{hit.get('requisition_id')}",
         "apply_url": hit.get("apply_url"),
     }
     if variant_count > 1:
@@ -424,7 +424,7 @@ def get_job_details(
             "industry": v5.get("company_sector_and_industry"),
             "employees": enriched.get("nb_employees"),
         },
-        "url": f"https://hiring.cafe/job/{hit.get('requisition_id')}",
+        "url": f"https://hiringcafe.com/job/{hit.get('requisition_id')}",
         "apply_url": hit.get("apply_url"),
         "description": _html_to_text(info.get("description") or "")
         or "(no description available)",

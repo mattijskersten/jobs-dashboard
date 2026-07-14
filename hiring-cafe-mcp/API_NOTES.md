@@ -1,5 +1,16 @@
 # hiring.cafe unofficial API notes
 
+> **Domain migration (2026-07-15):** the site moved from `hiring.cafe` to
+> `hiringcafe.com`. The old domain still serves the homepage HTML with a valid
+> `buildId`, but its `/_next/data` routes now return the app-shell HTML instead
+> of JSON — so `pageProps` extraction fails on every pass. `BASE_URL` in
+> `api.py` now points at `hiringcafe.com`. If data routes start returning HTML
+> again, check whether the canonical domain moved (the homepage `<link
+> rel="canonical">` shows the current one). The `buildId` and data-route scheme
+> are unchanged across the move. URLs below still say `hiring.cafe`; read them
+> as `hiringcafe.com`.
+
+
 Discovered 2026-06-12 by inspecting the site's JS bundles and network
 behavior. hiring.cafe is a Next.js app; search and job pages are SSR'd, and
 their JSON comes from `/_next/data/` routes. There is **no public API and no

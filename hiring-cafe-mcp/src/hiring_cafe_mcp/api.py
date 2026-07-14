@@ -19,7 +19,11 @@ from urllib.parse import quote
 
 import httpx
 
-BASE_URL = "https://hiring.cafe"
+# The site migrated from hiring.cafe to hiringcafe.com (observed 2026-07-15).
+# The old domain still serves the homepage HTML (with a valid buildId) but its
+# /_next/data routes return the app-shell HTML instead of JSON, so pageProps
+# extraction fails. The new domain serves the data routes correctly.
+BASE_URL = "https://hiringcafe.com"
 
 _BROWSER_HEADERS = {
     "User-Agent": (
