@@ -44,6 +44,13 @@ or stalled process. Say so in the rationale when it changes the bucket.
 
 ## Search hints
 
+The two collectors have opposite search rules — a broad filter for hiring.cafe,
+narrow single-title passes for LinkedIn — because their APIs differ (hiring.cafe
+paginates to exhaustion; LinkedIn caps output at ~10 results per call). Read the
+subsection for the collector you are running.
+
+### hiring.cafe (script-driven — broad filter)
+
 These passes are implemented mechanically in `scripts/ingest-jobs.py` — the
 pipeline runs that script rather than issuing `search_jobs` calls, so results
 land in the database deterministically. Keep this section and the script in
@@ -73,3 +80,21 @@ Location, two variants per pass:
   triage anyway.
 
 Paginate every pass to exhaustion. Use `page_size: 50` to minimize calls.
+
+### LinkedIn (narrow single-title passes)
+
+`/ingest-linkedin` cannot use the broad filter above: LinkedIn's `search_jobs`
+returns only ~10 results per call, so a broad OR-of-titles query silently drops
+most matches. It runs a broad sweep (OR-joined track titles, from the Role lines
+above) **plus** a short list of narrow single-title passes — one title per call,
+small enough to fit under the ~10 cap — for the highest-value titles and the
+variants the OR-query buries. Tune this list; keep it short (the skill caps total
+calls at ~7–8 to avoid LinkedIn's bot protection):
+
+| Track | Title |
+|---|---|
+| A | `<a high-value / commonly-missed title, e.g. Head of Product>` |
+| B | `<a high-value / commonly-missed title, e.g. IT Director>` |
+
+This is the *what*. The *how* (sort order, seniority facet, call ceiling,
+pacing) lives in `.claude/commands/ingest-linkedin.md`, which reads this list.

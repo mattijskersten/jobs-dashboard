@@ -14,15 +14,31 @@ will bot-flag on heavy use. You only collect here; triage happens later in
 - The `linkedin` MCP needs a logged-in session cookie. If a search returns an
   auth error, stop and tell the user to run the one-time login
   (`uvx linkedin-scraper-mcp@latest` login flow); do not retry in a loop.
-- Read `data/search-profile.md` for the home location and the two tracks
-  (A and B, as defined there). If it is missing, stop and tell
-  the user to create it from `templates/search-profile.example.md`.
+- Read `data/search-profile.md` for the home location, the two tracks
+  (A and B, as defined there), and the LinkedIn narrow-title list under its
+  "Search hints" section. If it is missing, stop and tell the user to create it
+  from `templates/search-profile.example.md`.
 
 ## 1. Search (sequential + paced — hard rules)
 
-Run a small fixed set of **~4 searches**, derived from the profile's tracks and
-location. Mirror this validated pattern (fill keywords and location from the
-profile — OR-join each track's qualifying titles):
+The `search_jobs` MCP returns only **~10 `job_ids` per call, regardless of
+`max_pages`** (verified 2026-07-15: `max_pages` 2 and 5 both returned 10 of a
+claimed 25), and its default relevance ordering is an unstable window that
+shifts between identical calls and injects promoted cards. Two rules follow from
+that, and shape the plan below:
+
+- **Always pass `sort_by: "date"`.** Deterministic newest-first ordering — a
+  given search returns the same set every run, and the incremental sweep
+  reliably catches new postings instead of a random 10.
+- **Prefer many narrow queries over one broad one.** The ~10 cap is *per query*,
+  so a broad OR-of-titles search with 25+ matches silently loses most of them; a
+  single-title query has a small enough pool that the ~10 window covers it.
+
+Run two groups, **all sequential** (never parallel), and for every call use
+`sort_by: "date"`, `date_posted: "past_month"`, `max_pages: 2`:
+
+**Group 1 — broad sweep (4 calls).** OR-join each track's titles; catches the
+obvious matches. `experience_level: "director,executive"`.
 
 | Track | keywords | location | work_type |
 |---|---|---|---|
@@ -31,13 +47,23 @@ profile — OR-join each track's qualifying titles):
 | B | `<track-B titles, OR-joined>` | `<home city>` | — |
 | B | `<track-B titles, OR-joined>` | `<country>` | `remote` |
 
-For every call to `mcp__linkedin__search_jobs` use:
-`max_pages: 2`, `experience_level: "director,executive"`, `date_posted: "past_month"`
-(and `work_type` per the table).
+**Group 2 — narrow single-title passes (3–4 calls).** One title per call, for
+the variants the broad OR-query buries or that LinkedIn misclassifies below
+director. **Take the title list from the "LinkedIn (narrow single-title passes)"
+table in `data/search-profile.md`** — one call per row, with that row's track.
+Because each pool is small, widen the filter to
+`experience_level: "director,executive,mid_senior"` to recover "Head of X" roles
+LinkedIn tags as Mid-Senior — the small pool keeps IC noise low. Use the
+`<country>` location with **no** `work_type`, so both local and remote surface in
+one call.
+
+Keep the **total at ~7–8 calls max** — every call is a scrape and LinkedIn
+bot-flags on volume. The profile list is meant to stay short for this reason; if
+it has grown, run the highest-value titles and note which you dropped.
 
 **Pacing (do not violate):**
 - Call `search_jobs` **one at a time** — never issue parallel tool calls.
-- ~4 calls total. Do **not** call `get_job_details` here (deferred to triage).
+- ~7–8 calls total. Do **not** call `get_job_details` here (deferred to triage).
 
 `search_jobs` returns `{ job_ids: [...], sections: {name -> raw text}, url }`.
 Parse the raw `sections` text into one record per `job_id`:
