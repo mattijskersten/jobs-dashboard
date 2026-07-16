@@ -8,7 +8,6 @@
       "mcp__linkedin__get_job_details",
       "Read(**)",
       "Edit(data/**)",
-      "Write(data/**)",
       "Bash(sqlite3 *)",
       "Bash(scripts/init-db.sh*)",
       "Bash(scripts/ingest.sh*)",
@@ -17,7 +16,6 @@
       "Bash(scripts/tailor-job.sh*)",
       "Bash(scripts/promote.sh*)",
       "Bash(tooling/build.sh *)",
-      "Bash(./tooling/build.sh *)",
       "Bash(pdfinfo *)",
       "Bash(date*)"
     ],
