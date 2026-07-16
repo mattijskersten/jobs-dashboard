@@ -75,10 +75,36 @@ def test_close_and_reopen_without_cv_goes_to_needs_review(root):
 
 
 def test_close_refused_from_applied_and_rejected(root):
+    # an applied job is never 'closed' — the posting didn't retire on me, so if
+    # it's dead it's because the company declined (see test_decline_*)
     db.apply_action("tail-1", "applied")
     for job_id in ("tail-1", "rej-1"):
         changed, _ = db.apply_action(job_id, "close")
         assert not changed
+
+
+def test_decline_from_applied(root):
+    db.apply_action("tail-1", "applied")
+    changed, _ = db.apply_action("tail-1", "decline")
+    assert changed and status_of("tail-1") == "declined"
+
+
+def test_decline_refused_outside_applied(root):
+    db.apply_action("short-1", "close")
+    for job_id in ("review-1", "tail-1", "short-1", "rej-1"):
+        changed, message = db.apply_action(job_id, "decline")
+        assert not changed and "decline" in message
+
+
+def test_declined_is_terminal(root):
+    # the company said no after I applied — there's no earlier stage to reopen
+    # to, so 'declined' accepts no further transitions
+    db.apply_action("tail-1", "applied")
+    db.apply_action("tail-1", "decline")
+    for action in db.ACTIONS:
+        changed, _ = db.apply_action("tail-1", action)
+        assert not changed, f"{action} escaped the terminal 'declined' state"
+    assert status_of("tail-1") == "declined"
 
 
 def test_reopen_from_rejected_still_goes_to_needs_review(root):

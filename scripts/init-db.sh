@@ -25,13 +25,16 @@ if ! sqlite3 "$ROOT/data/jobs.db" "PRAGMA table_info(jobs);" | grep -q "|starred
   sqlite3 "$ROOT/data/jobs.db" "ALTER TABLE jobs ADD COLUMN starred INTEGER NOT NULL DEFAULT 0;"
 fi
 
-# 'closed' status: SQLite cannot alter a CHECK constraint, so tables created
-# before it was added must be rebuilt. One transaction: create the new table
-# (DDL matches schema.sql — keep in sync), copy rows, swap. Runs after the
+# Status vocabulary: SQLite cannot alter a CHECK constraint, so tables created
+# before a status was added must be rebuilt. One transaction: create the new
+# table (DDL matches schema.sql — keep in sync), copy rows, swap. Runs after the
 # column migrations above so every copied column is guaranteed to exist.
+# The grep sentinel is the most recently added status ('declined') — bump it
+# whenever you add another, or this rebuild silently no-ops on existing DBs and
+# the new value fails the CHECK at runtime.
 if ! sqlite3 "$ROOT/data/jobs.db" \
      "SELECT sql FROM sqlite_master WHERE type='table' AND name='jobs';" \
-     | grep -q "'closed'"; then
+     | grep -q "'declined'"; then
   sqlite3 -bail "$ROOT/data/jobs.db" <<'SQL'
 BEGIN IMMEDIATE;
 CREATE TABLE jobs_new (
@@ -46,7 +49,7 @@ CREATE TABLE jobs_new (
     status              TEXT NOT NULL DEFAULT 'seen'
                         CHECK (status IN ('seen','triaged','needs-review',
                                           'shortlisted','tailored','applied','rejected',
-                                          'closed')),
+                                          'closed','declined')),
     score               INTEGER CHECK (score BETWEEN 1 AND 10),
     starred             INTEGER NOT NULL DEFAULT 0,
     rationale           TEXT,
@@ -78,7 +81,7 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_score  ON jobs(score);
 COMMIT;
 SQL
-  echo "migrated: jobs table rebuilt to allow status 'closed'"
+  echo "migrated: jobs table rebuilt to allow status 'declined'"
 fi
 
 echo "ok: $ROOT/data/jobs.db"

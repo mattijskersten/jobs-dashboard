@@ -38,7 +38,7 @@
     {% if has_cv %}<a class="btn primary" href="{{ url_for('job_cv', job_id=job.job_id, filename=cv_filename) }}" target="_blank" rel="noopener">Tailored CV ↗</a>{% endif %}
   </div>
 
-  {% if job.status in ['tailored', 'applied'] %}
+  {% if refinable %}
   <section class="panel refine" data-refine
            data-rc-status="{{ session.status if session else '' }}">
     <div class="panel-body">
@@ -106,7 +106,7 @@
 
   {% set ns = namespace(has_actions=false) %}
   {% for action, spec in actions.items() %}{% if job.status in spec[1] %}{% set ns.has_actions = true %}{% endif %}{% endfor %}
-  {% set action_labels = {'promote': 'Promote', 'reject': 'Reject', 'close': 'Posting closed', 'reopen': 'Reopen', 'applied': 'Mark applied'} %}
+  {% set action_labels = {'promote': 'Promote', 'reject': 'Reject', 'close': 'Posting closed', 'reopen': 'Reopen', 'applied': 'Mark applied', 'decline': 'Declined'} %}
   {% if ns.has_actions or job.status == 'shortlisted' %}
   <div class="actionbar">
     {% for action, spec in actions.items() %}

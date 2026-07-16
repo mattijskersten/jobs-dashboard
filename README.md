@@ -216,3 +216,11 @@ or with `scripts/promote.sh <job_id> close`; it's allowed from `needs-review`,
 `shortlisted`, or `tailored`, and the tailored CV artifacts stay on disk.
 **Reopen** on a closed job restores `tailored` if a CV exists, else
 `needs-review` — so a reposted role picks up where it left off.
+
+A third off-ramp, `declined`, records the company turning your application
+down. It's reachable only from `applied` — via **Declined** on the dashboard or
+`scripts/promote.sh <job_id> decline` — and unlike the other two it's terminal:
+you already applied, so there's no earlier stage to reopen to. Each off-ramp
+answers a different question, which is why none of them are merged: `rejected`
+measures triage quality, `closed` is the world's doing, and `declined` against
+`applied` is your application hit rate.

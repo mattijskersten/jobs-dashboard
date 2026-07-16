@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     status              TEXT NOT NULL DEFAULT 'seen'
                         CHECK (status IN ('seen','triaged','needs-review',
                                           'shortlisted','tailored','applied','rejected',
-                                          'closed')),
+                                          'closed','declined')),
     score               INTEGER CHECK (score BETWEEN 1 AND 10),
     starred             INTEGER NOT NULL DEFAULT 0,  -- manual priority flag, independent of status
     rationale           TEXT,                       -- one-line triage rationale

@@ -299,7 +299,7 @@ details.collect[open] > summary { margin-bottom: 10px; }
 .st-needs-review { color: var(--mid); border-color: color-mix(in srgb, var(--mid) 45%, var(--line)); }
 .st-shortlisted { color: var(--brass); border-color: var(--brass-dim); }
 .st-tailored, .st-applied { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
-.st-rejected, .st-closed { color: var(--faint); }
+.st-rejected, .st-closed, .st-declined { color: var(--faint); }
 
 .empty {
   border: 1px dashed var(--line); border-radius: var(--radius);

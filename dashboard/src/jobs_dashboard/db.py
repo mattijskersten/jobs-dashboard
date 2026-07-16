@@ -17,25 +17,30 @@ from typing import Any
 
 # Active funnel statuses, in the order a job moves through them. (The schema
 # CHECK also still accepts a legacy 'triaged' value nothing writes anymore.)
-# 'rejected' = I judged it a bad fit; 'closed' = the posting was retired
-# before I could apply — kept distinct so closed jobs don't pollute the
-# rejected bucket when reviewing triage quality.
+# Three off-ramps, kept distinct because each answers a different question:
+#   'rejected' = I judged it a bad fit          → measures triage quality
+#   'closed'   = the posting was retired before I could apply → the world's fault
+#   'declined' = the company turned my application down → measures application hit rate
+# Collapsing any pair would make its bucket unreadable for that question.
 STATUS_ORDER = [
     "seen", "needs-review", "shortlisted", "tailored", "applied",
-    "rejected", "closed",
+    "rejected", "closed", "declined",
 ]
 
 # action -> (new_status, {statuses it may be applied from})
 # Canonical transition table; scripts/promote.sh mirrors these rules for the
-# CLI (promote/reject/close) — keep them in sync. Note: reopening a closed
-# job that already has a tailored CV restores 'tailored', not 'needs-review'
-# (special-cased in apply_action).
+# CLI (promote/reject/close/decline) — keep them in sync. Note: reopening a
+# closed job that already has a tailored CV restores 'tailored', not
+# 'needs-review' (special-cased in apply_action). 'declined' is terminal and
+# absent from reopen's allowed-from set: you already applied, so there is no
+# earlier stage to return to.
 ACTIONS: dict[str, tuple[str, set[str]]] = {
     "promote": ("shortlisted", {"needs-review"}),
     "reject": ("rejected", {"needs-review", "shortlisted", "seen"}),
     "close": ("closed", {"needs-review", "shortlisted", "tailored"}),
     "reopen": ("needs-review", {"rejected", "closed"}),
     "applied": ("applied", {"tailored"}),
+    "decline": ("declined", {"applied"}),
 }
 
 

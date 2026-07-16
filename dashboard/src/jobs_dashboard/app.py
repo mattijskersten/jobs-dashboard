@@ -92,6 +92,7 @@ async def job_detail(request: Request):
             # so "save as" defaults to it (e.g. "cv Jane Doe Acme.pdf")
             "cv_filename": cv_file.name if cv_file else None,
             "actions": db.ACTIONS,
+            "refinable": job["status"] in REFINABLE_STATUSES,
             "tasks": tasks.snapshot(),
             "session": sessions.snapshot().get(job_id),
             # for the "resume in your shell" command in the Refine panel
@@ -232,6 +233,10 @@ async def tasks_status(request: Request):
 
 # --- Remote Control: resume a tailoring session to fine-tune the CV ---------
 
+# Statuses whose CV is still worth fine-tuning: the application is live. A job
+# that's off the funnel (rejected/closed/declined) keeps its session_id, but
+# refining its CV is pointless — reopen it first. job.html gates the Refine
+# panel on this via the 'refinable' context flag.
 REFINABLE_STATUSES = {"tailored", "applied"}
 
 
@@ -241,6 +246,11 @@ async def trigger_remote(request: Request):
     job = db.get_job(job_id)
     if not job:
         return PlainTextResponse("job not found", status_code=404)
+    if job["status"] not in REFINABLE_STATUSES:
+        return PlainTextResponse(
+            f"refining only runs on {'/'.join(sorted(REFINABLE_STATUSES))} jobs",
+            status_code=409,
+        )
     if not (job.get("tailoring_session_id") or "").strip():
         return PlainTextResponse(
             "no resumable session — tailor this job first", status_code=409
