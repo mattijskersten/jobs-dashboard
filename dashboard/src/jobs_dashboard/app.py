@@ -218,9 +218,9 @@ async def trigger_tailor(request: Request):
         label=f"tailor {job['company']}",
         log_name=f".tailor-{job_id}.log",
     )
-    return RedirectResponse(
-        str(request.url_for("job_detail", job_id=job_id)), status_code=303
-    )
+    form = await request.form()
+    back = form.get("next") or request.url_for("job_detail", job_id=job_id)
+    return RedirectResponse(str(back), status_code=303)
 
 
 async def tasks_status(request: Request):
@@ -261,17 +261,17 @@ async def trigger_remote(request: Request):
             "a pipeline task is running; try again shortly", status_code=409
         )
     sessions.launch(job_id)
-    return RedirectResponse(
-        str(request.url_for("job_detail", job_id=job_id)), status_code=303
-    )
+    form = await request.form()
+    back = form.get("next") or request.url_for("job_detail", job_id=job_id)
+    return RedirectResponse(str(back), status_code=303)
 
 
 async def stop_remote(request: Request):
-    sessions.stop(request.path_params["job_id"])
-    return RedirectResponse(
-        str(request.url_for("job_detail", job_id=request.path_params["job_id"])),
-        status_code=303,
-    )
+    job_id = request.path_params["job_id"]
+    sessions.stop(job_id)
+    form = await request.form()
+    back = form.get("next") or request.url_for("job_detail", job_id=job_id)
+    return RedirectResponse(str(back), status_code=303)
 
 
 async def remote_qr(request: Request):
