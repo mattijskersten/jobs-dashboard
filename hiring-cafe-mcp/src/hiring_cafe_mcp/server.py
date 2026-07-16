@@ -371,25 +371,9 @@ def search_jobs(
     return result
 
 
-@mcp.tool
-def get_job_details(
-    job_id: Annotated[
-        str,
-        Field(description="The `id` of a job returned by search_jobs."),
-    ],
-) -> dict[str, Any]:
-    """Fetch the full description and metadata for one job.
-
-    Call this only for jobs whose search_jobs summary already looks like a
-    match — the description is long and costs context. Returns the complete
-    posting text (plain text), application URL, salary, requirements,
-    education/experience demands, benefits and company information.
-    """
-    try:
-        hit = _client.get_job(job_id)
-    except HiringCafeError as exc:
-        raise ToolError(str(exc)) from exc
-
+def _job_details(hit: dict[str, Any]) -> dict[str, Any]:
+    """Build the full-detail record for one job hit (shared by the MCP tool
+    and scripts/fetch-jd.py). Includes the complete plain-text `description`."""
     v5 = hit.get("v5_processed_job_data") or {}
     info = hit.get("job_information") or {}
     enriched = hit.get("enriched_company_data") or {}
@@ -438,6 +422,27 @@ def get_job_details(
         k: v for k, v in details["company_info"].items() if v not in (None, "", [])
     } or None
     return {k: v for k, v in details.items() if v not in (None, "", [])}
+
+
+@mcp.tool
+def get_job_details(
+    job_id: Annotated[
+        str,
+        Field(description="The `id` of a job returned by search_jobs."),
+    ],
+) -> dict[str, Any]:
+    """Fetch the full description and metadata for one job.
+
+    Call this only for jobs whose search_jobs summary already looks like a
+    match — the description is long and costs context. Returns the complete
+    posting text (plain text), application URL, salary, requirements,
+    education/experience demands, benefits and company information.
+    """
+    try:
+        hit = _client.get_job(job_id)
+    except HiringCafeError as exc:
+        raise ToolError(str(exc)) from exc
+    return _job_details(hit)
 
 
 def main() -> None:

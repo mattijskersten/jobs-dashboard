@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     rationale           TEXT,                       -- one-line triage rationale
     posted_date         TEXT,                       -- hiring.cafe estimated_publish_date (YYYY-MM-DD)
     summary_json        TEXT,                       -- compact search summary captured at ingest (triage input)
-    jd_path             TEXT,                       -- data/jds/JD $COMPANY $JOBID.txt (score >= 6 only)
+    jd_path             TEXT,                       -- data/jds/JD $COMPANY $JOBID.txt, raw source JD written whenever details are fetched
     cv_md_path          TEXT,                       -- data/cvs/cv <Candidate> $COMPANY[ $TITLE].md
     cv_pdf_path         TEXT,
     tailoring_session_id TEXT,                      -- claude --resume <id> to fine-tune

@@ -39,27 +39,37 @@ Rows carry a `summary_json.source` that decides which details tool to use:
 
 - `source == "manual"` — a hand-supplied JD (landed by `scripts/ingest-jd.sh`):
   its full description is already on disk at `jd_path` and it has **no**
-  hiring.cafe id. Score it from that file, never call any `get_job_details`, and
-  skip step 3's fetch/save (already saved).
+  hiring.cafe id. Score it from that file, never fetch, and skip step 3's
+  fetch/save (already saved).
 - `source == "linkedin"` — landed by `/ingest-linkedin`, summary-only, with a
   numeric `summary_json.linkedin_id` and **no** hiring.cafe id. When details are
   needed (step 2/3), call `mcp__linkedin__get_job_details(linkedin_id)` —
-  **never** the hiring.cafe one. Be conservative: fetch LinkedIn details
-  **sequentially** (no parallel calls) and **cap at 8 per run**. If a ≥6 keeper
-  is past the cap, leave it `needs-review` with summary-only and note in the
-  digest that its JD fetch was deferred (a later `/promote` or run will fetch it).
-- otherwise (hiring.cafe) — use `mcp__hiring-cafe__get_job_details`.
+  **never** the hiring.cafe one — then pipe its `description` field **verbatim**
+  to `scripts/save-jd.py --job-id <job_id> --company "<name>"` (it writes the raw
+  JD and sets `jd_path`; do not reformat or summarize the text yourself). Be
+  conservative: fetch LinkedIn details **sequentially** (no parallel calls) and
+  **cap at 8 per run**. If a ≥6 keeper is past the cap, leave it `needs-review`
+  with summary-only and note in the digest that its JD fetch was deferred (a
+  later `/promote` or run will fetch it).
+- otherwise (hiring.cafe) — fetch with `scripts/fetch-jd.sh <job_id> --company
+  "<name>"` (not the MCP `get_job_details` tool). It writes the raw JD to
+  `data/jds/` and sets `jd_path`; score from its structured JSON stdout. The full
+  description never enters context — read the saved file only if the prose is
+  needed to score.
 
 For each `seen` row, judge from its `summary_json` (location,
 workplace_type, seniority, role_type, salary, requirements_summary…) and
 score it by the rules in `tooling/TRIAGE.md`. Batch specifics on top of
 those rules:
 
-- Call the row's details tool (per the source rules above) when the summary
-  leaves a likely-≥6 job ambiguous; hard-filter rejects never get a fetch.
-- For every job scoring ≥ 6, fetch full details (if not already fetched) to
-  make the required `data/jds/` save; manual rows already have the JD on disk.
-- Batch the row updates ~20 per transaction.
+- Fetch the row's details (per the source rules above) when the summary leaves
+  a likely-≥6 job ambiguous; hard-filter rejects never get a fetch. The fetch
+  tooling saves the raw JD and sets `jd_path` — you never write JD text.
+- Every job scoring ≥ 6 must have its JD on disk, so fetch it if you have not
+  already; manual rows already have the JD on disk. A fetch always saves, so an
+  ambiguous fetch that ends up < 6 harmlessly leaves its JD on disk too.
+- Batch the row updates ~20 per transaction (score, rationale, status,
+  updated_at — `jd_path` is set by the fetch tooling).
 
 Before moving on, assert the queue is drained —
 `sqlite3 data/jobs.db "SELECT count(*) FROM jobs WHERE status = 'seen';"`

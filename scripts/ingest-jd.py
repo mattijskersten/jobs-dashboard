@@ -27,10 +27,9 @@ import sqlite3
 import sys
 from pathlib import Path
 
-from sanitize import safe_label  # scripts/sanitize.py — shared with tailor-job.sh
+import jd_store  # scripts/jd_store.py — the one JD-file + naming convention
 
 ROOT = Path(__file__).resolve().parent.parent
-JD_DIR = ROOT / "data" / "jds"
 SUMMARY_EXCERPT_CHARS = 1500
 
 
@@ -61,10 +60,9 @@ def main() -> None:
         sys.exit(f"JD file is empty: {src}")
 
     job_id = derive_id(args.company, args.title)
-    JD_DIR.mkdir(parents=True, exist_ok=True)
-    jd_file = JD_DIR / f"JD {safe_label(args.company)} {job_id}.txt"
-    jd_file.write_text(text, encoding="utf-8")
-    jd_path = str(jd_file.relative_to(ROOT))
+    # jd_store owns the file + naming convention; this script sets jd_path
+    # itself as part of its own INSERT/UPDATE below, so pass no db handle.
+    jd_path = jd_store.write_jd(args.company, job_id, text)
 
     summary = {
         "id": job_id,

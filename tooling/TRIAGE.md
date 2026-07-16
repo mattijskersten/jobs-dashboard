@@ -15,12 +15,25 @@ this file for *how* the score becomes a status.
 2. Jobs that pass score **1–10** against the profile's soft preferences and
    scoring guide (domain, scope, people management, posting freshness — stale
    postings score lower per the profile).
-3. **Every job scoring ≥ 6** must end with its full description on disk at
-   `data/jds/JD $COMPANY $JOBID.txt` (company name stripped of `/\:*?"<>|`)
-   and `jd_path` set on the row. Tailoring and later fine-tuning read the JD
-   from disk — never re-fetch it. Skip the save when the JD is already on disk
-   (manual ingest sets `jd_path` at landing time).
+3. **The JD is saved to disk by the tooling at fetch time — you never write or
+   reformat JD text.** Whenever you fetch a job's details you must persist them
+   verbatim so tailoring and later fine-tuning read full-fidelity source text
+   (they read the JD from disk and never re-fetch):
+   - **hiring.cafe** — fetch via `scripts/fetch-jd.sh <job_id> --company "<name>"`
+     (not the MCP tool). It writes the raw description to
+     `data/jds/JD <company> <job_id>.txt` and sets `jd_path` for you; score from
+     its structured stdout.
+   - **linkedin** — call `mcp__linkedin__get_job_details`, then pipe its
+     `description` field **verbatim** (no edits, no headers, no summarizing) to
+     `scripts/save-jd.py --job-id <job_id> --company "<name>"`, which writes it
+     and sets `jd_path`.
+   - **manual** — already on disk with `jd_path` set at landing time; skip.
+
+   Every scoring-≥ 6 job must have its JD on disk. A fetched job is always saved,
+   so an ambiguous fetch that ends up < 6 still leaves its raw JD on disk — that
+   is fine (re-triage never re-fetches).
 4. Status follows the score: **≥ 8 → `shortlisted`**, **6–7 →
    `needs-review`**, **≤ 5 → `rejected`**.
 5. Update rows with targeted `sqlite3` UPDATEs (double any `'` in strings):
-   set score, rationale, status, jd_path (≥ 6 only), and updated_at.
+   set score, rationale, status, and updated_at. `jd_path` is already set by
+   the fetch tooling (rule 3) — do not set it by hand.
