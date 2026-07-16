@@ -3,7 +3,8 @@
 {% block title %}{{ job.company }} · {{ job.title }}{% endblock %}
 
 {% block content %}
-<a class="backlink" href="{{ url_for('index') }}">← back to board</a>
+{% set back = request.query_params.get('back') %}
+<a class="backlink" href="{{ url_for('index') }}{% if back %}?{{ back }}{% endif %}">← back to board</a>
 
 <article class="jobdetail">
   <div class="detail-head">
