@@ -13,7 +13,7 @@ will bot-flag on heavy use. You only collect here; triage happens later in
 - `scripts/init-db.sh` (idempotent).
 - The `linkedin` MCP needs a logged-in session cookie. If a search returns an
   auth error, stop and tell the user to run the one-time login
-  (`uvx linkedin-scraper-mcp@latest` login flow); do not retry in a loop.
+  (`uvx mcp-server-linkedin@latest` login flow); do not retry in a loop.
 - Read `data/search-profile.md` for the home location, the two tracks
   (A and B, as defined there), and the LinkedIn narrow-title list under its
   "Search hints" section. If it is missing, stop and tell the user to create it

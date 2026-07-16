@@ -92,7 +92,7 @@ Or as a systemd user timer, point `ExecStart` at the same script.
   (`source:"linkedin"`); the next `/pipeline` triages, fetches JDs, and tailors
   them. On-demand only — LinkedIn is browser-scraped, so use is deliberate and
   conservative (never run in the nightly job). It needs a one-time logged-in
-  cookie: run the `linkedin-scraper-mcp` login flow once if a search returns an
+  cookie: run the `mcp-server-linkedin` login flow once if a search returns an
   auth error.
 - **Fine-tune a tailored CV** by resuming its dedicated session:
 
