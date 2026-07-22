@@ -26,6 +26,13 @@ TITLE=$(printf '%s' "$row" | cut -f2)
 JD_PATH=$(printf '%s' "$row" | cut -f3)
 SCORE=$(printf '%s' "$row" | cut -f4)
 RATIONALE=$(printf '%s' "$row" | cut -f5-)
+# A job promoted out of needs-review (dashboard button or scripts/promote.sh)
+# may never have had its JD fetched — triage only fetches for scores >= 6, and
+# LinkedIn fetches are capped per run. Fetch it now rather than failing.
+if [ -z "$JD_PATH" ] || [ ! -f "$ROOT/$JD_PATH" ]; then
+  "$ROOT/scripts/ensure-jd.sh" "$JOB_ID" || exit 1
+  JD_PATH=$(sqlite3 "$DB" "SELECT COALESCE(jd_path, '') FROM jobs WHERE job_id = '$JOB_ID';")
+fi
 if [ ! -f "$ROOT/$JD_PATH" ]; then
   echo "ERROR: JD file missing for $JOB_ID: $JD_PATH" >&2
   exit 1

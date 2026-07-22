@@ -13,3 +13,8 @@ Promote or reject a job that triage put in `needs-review`: $ARGUMENTS
 3. Confirm the result to the user. A promoted job is picked up by the next
    pipeline run like any other shortlisted job; to tailor it immediately, run
    `scripts/tailor-pending.sh` — mention this option.
+
+Promoting never needs a JD fetch of its own: a job whose JD was never fetched
+(triage only fetches at score ≥ 6, and LinkedIn fetches are capped per run)
+has it fetched at tailor time by `scripts/ensure-jd.sh`, which `tailor-job.sh`
+calls. The same holds for jobs promoted with the dashboard's button.
