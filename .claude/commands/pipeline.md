@@ -4,7 +4,7 @@ description: Process the job queue — triage seen jobs, tailor CVs, write diges
 
 Run one pipeline pass over whatever is already in the queue: **triage → tailor
 → report**. Collection is a separate step done before this command — hiring.cafe
-via `/ingest-hiringcafe` (or the nightly `run-pipeline.sh`), LinkedIn via
+via `/ingest-hiringcafe` (or the headless `run-pipeline.sh`), LinkedIn via
 `/ingest-linkedin`, manual JDs via `/ingest-jd` — each lands `status = 'seen'`
 rows. You only process them; never run searches here. You run unattended — never
 ask questions; on any unrecoverable error, record it and still produce the

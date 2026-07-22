@@ -1,6 +1,6 @@
 # jobs-dashboard
 
-CV-driven job search agent. A nightly pipeline searches
+CV-driven job search agent. A headless pipeline searches
 [hiring.cafe](https://hiring.cafe) for senior roles matching the two tracks you
 define in `data/search-profile.md`, triages them against that profile, tailors
 your CV for the best matches in sequential headless Claude sessions, and writes a
@@ -21,7 +21,7 @@ committed). Copy the templates into `data/` to get started (see **Setup**).
 | `.claude/commands/` | `/pipeline` (triage → tailor → report the queue); the collection commands `/ingest-hiringcafe`, `/ingest-linkedin`, `/ingest-jd`; and `/promote` |
 | `tooling/` | CV build assets (`build.sh`, `cv-template.tex`, `cv-filter.lua`) and tailoring rules (`AGENTS.md`) |
 | `templates/` | Sanitized templates that ship: `cv.example.md`, `search-profile.example.md`, `cv-example-{1,2}.md` |
-| `scripts/` | `run-pipeline.sh` (headless entry), `ingest.sh` (mechanical search→DB; runs in `hiring-cafe-mcp/.venv` for httpx+yaml), `ingest-jd.sh` (land a hand-supplied JD→DB), `tailor-pending.sh`, `tailor-job.sh`, `promote.sh`, `init-db.sh`, `dashboard.sh` (launch the web UI) |
+| `scripts/` | Deterministic tooling around the DB — see `scripts/README.md` for the entry-points-vs-helpers breakdown. Highlights: `run-pipeline.sh` (headless entry), `ingest.sh` (mechanical search→DB), `ingest-jd.sh` (land a hand-supplied JD→DB), `tailor-pending.sh`, `promote.sh`, `init-db.sh`, `dashboard.sh` (launch the web UI) |
 | `data/` | **All personal content, gitignored:** `cv.md` (master CV), `search-profile.md` (job criteria), `references/` (style-ref CVs), `jobs.db`, `jds/`, `cvs/`, `reports/` |
 
 ## Setup
@@ -47,7 +47,7 @@ permission-bypassing flags anywhere.
 
 ## Running
 
-**Full pipeline (headless, what cron runs):**
+**Full pipeline (headless, one command):**
 
 ```sh
 scripts/run-pipeline.sh
@@ -63,13 +63,18 @@ Collection and processing are separate, so a manual full run is two steps —
 `/ingest-hiringcafe` (and/or `/ingest-linkedin`, `/ingest-jd`) to land jobs,
 then `/pipeline` to triage → tailor → report whatever is queued.
 
-**Nightly cron** (3:30 AM, log to file):
+**Optional scheduling.** `run-pipeline.sh` is cron-safe (lockfile, idempotent
+reruns, clean exit on upstream outage), so you *can* run it nightly:
 
 ```cron
 30 3 * * * /path/to/jobs-dashboard/scripts/run-pipeline.sh >> /path/to/jobs-dashboard/data/reports/cron.log 2>&1
 ```
 
-Or as a systemd user timer, point `ExecStart` at the same script.
+Or as a systemd user timer, point `ExecStart` at the same script. **Nothing is
+scheduled by default** — in this repo's current setup all ingest and pipeline
+runs are started manually, so an old error in
+`data/reports/.last-ingest.log` reflects a past manual run, not a live
+scheduled job.
 
 **Interactive use** is for reviewing, not driving runs:
 
@@ -80,8 +85,8 @@ Or as a systemd user timer, point `ExecStart` at the same script.
   statuses**). `scripts/tailor-pending.sh` tailors immediately.
 - **Search hiring.cafe** with `/ingest-hiringcafe` (or `scripts/ingest.sh
   --days N`): runs the standard mechanical passes and lands new jobs as `seen`
-  rows for the next `/pipeline` to triage. This is the same collection the
-  nightly script runs, exposed as a standalone command.
+  rows for the next `/pipeline` to triage. This is the same collection
+  `run-pipeline.sh` runs, exposed as a standalone command.
 - **Ingest a JD you found elsewhere** (a referral, a direct link) with
   `/ingest-jd <path-to-jd-file> [company] [title]`: it saves the JD, triages it
   against the profile, and tailors immediately if it scores ≥ 8 — no hiring.cafe
@@ -91,7 +96,7 @@ Or as a systemd user timer, point `ExecStart` at the same script.
   searches via the `linkedin` MCP and lands new roles as `seen` rows
   (`source:"linkedin"`); the next `/pipeline` triages, fetches JDs, and tailors
   them. On-demand only — LinkedIn is browser-scraped, so use is deliberate and
-  conservative (never run in the nightly job). It needs a one-time logged-in
+  conservative (never schedule it). It needs a one-time logged-in
   cookie: run the `mcp-server-linkedin` login flow once if a search returns an
   auth error.
 - **Fine-tune a tailored CV** by resuming its dedicated session:
@@ -135,7 +140,7 @@ expiry for the node so it doesn't drop off the tailnet after ~180 days.
 > ⚠️ The dashboard is **unauthenticated by design** — Tailscale is the security
 > boundary. It writes the database and shells out to `claude` for tailoring, so
 > **never expose it to the public internet.** Ingest/tailor actions run under the
-> same `flock` on `data/.pipeline.lock` as the nightly job, so they can't race it.
+> same `flock` on `data/.pipeline.lock` as `run-pipeline.sh`, so they can't race it.
 
 ### Refine a tailored CV from the browser (Remote Control)
 
@@ -176,7 +181,7 @@ defaulting `source` to `hiringcafe`).
 `data/jobs.db`, each with a compact summary — so no result can be silently lost
 in model context. Three sources, each its own command:
 
-- **hiring.cafe** (`/ingest-hiringcafe`, run by the nightly script) —
+- **hiring.cafe** (`/ingest-hiringcafe`, also run by `run-pipeline.sh`) —
   `scripts/ingest.sh` mechanically runs eight passes (2 tracks ×
   {departments, broad query} × {local-50mi, remote}, filtered to your target
   seniority and role type), paginating to exhaustion.

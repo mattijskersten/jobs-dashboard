@@ -71,6 +71,10 @@ Given a JD file:
    **Authority order:** references > `cv.md` for phrasing and claim scope;
    `cv.md` > references for completeness of older roles (never drop a role just
    because a reference omits it — see Tailoring scope).
+
+   If `data/tailoring-notes.md` exists, read it too — it carries the
+   candidate's claim-scope corrections (gitignored) and overrides everything
+   above where they conflict.
 2. **Write down the 3–5 most important themes/requirements** before drafting:
    seniority and scope signals (org size, revenue, company stage), domain
    emphasis, and terminology the JD repeats (mirror it per "Keyword mirroring"
@@ -127,6 +131,8 @@ Hard limit — this never overrides the no-fabrication rule:
 - ✅ Draw on material from the tailored examples not currently in cv.md
 - ✅ Adjust Core Competencies ordering/emphasis
 - ❌ Do not fabricate metrics, outcomes, or responsibilities
+- ❌ Do not merge facts from separate roles or projects into one claim — each
+  half being true does not make the pair true
 - ❌ Do not change dates, job titles, or company names
 - ❌ Do not remove roles entirely
 - ❌ Do not touch Education, header, languages, or layout
