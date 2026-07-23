@@ -27,7 +27,9 @@ digest. All state lives in `data/jobs.db` (SQLite); the model does judgment
   cooldown — wait it out; there is no challenge cookie to solve and no
   workaround to hunt for.
 - **LinkedIn is browser-scraped — use it conservatively.** On-demand only via
-  `/ingest-linkedin`, sequential and paced, never scheduled or bulk. Its MCP
+  `/ingest-linkedin` (job search) and `/warm-intros` (people lookup for one
+  job, drafts only — never send), sequential and paced, never scheduled or
+  bulk. Its MCP
   caps results at ~10 per call, so prefer more, narrower search passes over
   broadening one filter. "Promoted by hirer" postings return no body from
   `get_job_details` — land those manually via `scripts/save-jd.py`.

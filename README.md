@@ -18,7 +18,7 @@ committed). Copy the templates into `data/` to get started (see **Setup**).
 |---|---|
 | `hiring-cafe-mcp/` | MCP server for the unofficial hiring.cafe API (see its README) |
 | `dashboard/` | Mobile-friendly web UI over `data/jobs.db` (Starlette + uvicorn) — see **Dashboard** below |
-| `.claude/commands/` | `/pipeline` (triage → tailor → report the queue); the collection commands `/ingest-hiringcafe`, `/ingest-linkedin`, `/ingest-jd`; and `/promote` |
+| `.claude/commands/` | `/pipeline` (triage → tailor → report the queue); the collection commands `/ingest-hiringcafe`, `/ingest-linkedin`, `/ingest-jd`; `/promote`; and `/warm-intros` (find a referral path into one job's company, draft outreach — never sends) |
 | `tooling/` | CV build assets (`build.sh`, `cv-template.tex`, `cv-filter.lua`) and tailoring rules (`AGENTS.md`) |
 | `templates/` | Sanitized templates that ship: `cv.example.md`, `search-profile.example.md`, `cv-example-{1,2}.md` |
 | `scripts/` | Deterministic tooling around the DB — see `scripts/README.md` for the entry-points-vs-helpers breakdown. Highlights: `run-pipeline.sh` (headless entry), `ingest.sh` (mechanical search→DB), `ingest-jd.sh` (land a hand-supplied JD→DB), `tailor-pending.sh`, `promote.sh`, `init-db.sh`, `dashboard.sh` (launch the web UI) |
