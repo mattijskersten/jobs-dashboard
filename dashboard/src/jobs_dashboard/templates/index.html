@@ -95,6 +95,26 @@
   </section>
 </details>
 
+{% set piping = tasks.get('pipeline') and tasks['pipeline'].status == 'running' %}
+<details class="collect" {% if piping %}open{% endif %}>
+  <summary>Run pipeline{% if piping %} — running…{% endif %}</summary>
+  <section class="actions-bar">
+    <div class="action-pair">
+      <form class="pipeline-form" method="post" action="{{ url_for('pipeline') }}" data-task="pipeline"
+            onsubmit="return confirm('Run the full pipeline? Ingest → triage → tailor can take many minutes and uses Claude sessions.');">
+        <input type="text" name="instructions" placeholder="optional instructions for this run"
+               {% if piping %}disabled{% endif %}>
+        <button type="submit" class="btn" {% if piping %}disabled{% endif %}>
+          {% if piping %}Pipeline running…{% else %}Run pipeline{% endif %}
+        </button>
+      </form>
+      <span class="task-note" data-task-note="pipeline">
+        {% if tasks.get('pipeline') %}<a href="#" data-log="{{ tasks['pipeline'].log }}">{{ tasks['pipeline'].status }}</a>{% endif %}
+      </span>
+    </div>
+  </section>
+</details>
+
 <details class="filters">
   <summary>Filter &amp; search</summary>
   <form class="filterform" method="get" action="{{ url_for('index') }}">

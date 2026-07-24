@@ -113,7 +113,8 @@ each run's digest (the runs table on the overview links to `/run/{id}`, which
 renders `data/reports/run-*.md`), change job state (promote / reject / close /
 reopen / mark applied), **star a job to prioritise it** (starred jobs float to the top of
 every list and have their own filter, independent of pipeline stage), and trigger
-a hiring.cafe ingest or kick off tailoring for a shortlisted job — all without a
+a hiring.cafe ingest, a full pipeline run (`run-pipeline.sh`, with optional
+free-text instructions), or tailoring for a shortlisted job — all without a
 terminal. The funnel ribbon multi-selects: tap stages to toggle them on/off.
 
 ```sh

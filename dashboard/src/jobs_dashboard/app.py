@@ -182,6 +182,32 @@ async def trigger_ingest(request: Request):
     return RedirectResponse(str(request.url_for("index")), status_code=303)
 
 
+async def trigger_pipeline(request: Request):
+    # Full run: hiring.cafe ingest → triage → tailor → digest, via the same
+    # script cron would use. It takes data/.pipeline.lock itself, so it starts
+    # without the tasks.py flock wrapper (an outer flock would make the script
+    # no-op "successfully"). Refuse while any other task holds that lock —
+    # otherwise the pipeline would lose the lock race and exit 0 having done
+    # nothing, which the task registry would report as "done".
+    for kind in ("ingest", "linkedin", "tailor"):
+        if tasks.is_running(kind):
+            return PlainTextResponse(
+                f"a {kind} task is running; try again when it finishes",
+                status_code=409,
+            )
+    form = await request.form()
+    instructions = str(form.get("instructions") or "").strip()
+    script = db.repo_root() / "scripts" / "run-pipeline.sh"
+    await tasks.start(
+        kind="pipeline",
+        argv=[str(script)] + ([instructions] if instructions else []),
+        label="pipeline run",
+        log_name=".last-pipeline.log",
+        use_flock=False,
+    )
+    return RedirectResponse(str(request.url_for("index")), status_code=303)
+
+
 async def job_star(request: Request):
     job_id = request.path_params["job_id"]
     db.toggle_star(job_id)
@@ -292,6 +318,7 @@ routes = [
     Route("/", index, name="index"),
     Route("/ingest", trigger_ingest, methods=["POST"], name="ingest"),
     Route("/ingest-linkedin", trigger_ingest_linkedin, methods=["POST"], name="ingest_linkedin"),
+    Route("/pipeline", trigger_pipeline, methods=["POST"], name="pipeline"),
     Route("/tasks/status", tasks_status, name="tasks_status"),
     Route("/run/{run_id}", run_digest, name="run_digest"),
     Route("/job/{job_id}", job_detail, name="job_detail"),

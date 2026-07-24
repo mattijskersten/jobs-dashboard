@@ -179,6 +179,14 @@ details.collect[open] > summary { margin-bottom: 10px; }
 .action-pair { display: flex; align-items: center; gap: 9px; flex: 1 1 250px; min-width: 0; }
 .action-pair form { flex: 1; min-width: 0; }
 .action-pair .btn { width: 100%; }
+.pipeline-form { display: flex; gap: 8px; flex-wrap: wrap; }
+.pipeline-form input[type="text"] {
+  flex: 2 1 200px; min-width: 0;
+  padding: 12px 12px; min-height: 46px; font: 14px/1 var(--mono);
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+}
+.pipeline-form .btn { flex: 1 1 130px; width: auto; }
 .task-note { font-family: var(--mono); font-size: 11px; }
 .task-note a { color: var(--brass); }
 [data-task] button[disabled] { animation: pulse 1.5s ease-in-out infinite; }

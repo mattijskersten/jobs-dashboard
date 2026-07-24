@@ -6,7 +6,8 @@ stream their output to a log file under data/reports/, and keep a small in-memor
 registry the UI polls. Only one task of each *kind* runs at a time.
 
 Every command is wrapped in `flock -n data/.pipeline.lock` so a dashboard-triggered
-ingest/tailor never races the nightly run-pipeline.sh (which holds the same lock).
+ingest/tailor never races a run-pipeline.sh run (which holds the same lock) — except
+commands started with use_flock=False, which take that lock themselves.
 """
 
 from __future__ import annotations
@@ -70,11 +71,21 @@ def tail_log(name: str, max_bytes: int = 16_384) -> str | None:
     return data[-max_bytes:].decode("utf-8", errors="replace")
 
 
-async def start(kind: str, argv: list[str], label: str, log_name: str) -> tuple[bool, str]:
+async def start(
+    kind: str,
+    argv: list[str],
+    label: str,
+    log_name: str,
+    use_flock: bool = True,
+) -> tuple[bool, str]:
     """Launch `argv` under flock as a background task of the given kind.
 
     Returns (started, message). started is False if one of this kind is already
     running.
+
+    use_flock=False is for commands that take data/.pipeline.lock themselves
+    (run-pipeline.sh): wrapping those would make the inner flock lose to our
+    outer one and the script would no-op with exit 0, reported as "done".
     """
     async with _lock:
         if is_running(kind):
@@ -85,7 +96,7 @@ async def start(kind: str, argv: list[str], label: str, log_name: str) -> tuple[
         task = Task(kind=kind, label=label, log_path=log_path)
         _tasks[kind] = task
 
-    cmd = ["flock", "-n", str(_lockfile()), *argv]
+    cmd = ["flock", "-n", str(_lockfile()), *argv] if use_flock else list(argv)
     asyncio.create_task(_run(task, cmd))
     return True, f"started {label}"
 
