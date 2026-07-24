@@ -126,9 +126,9 @@ main { padding: 16px 14px 28px; max-width: 720px; margin: 0 auto; }
   align-self: center; color: var(--faint); font-family: var(--mono);
   padding: 0 2px; user-select: none; flex: 0 0 auto;
 }
-.offramp { display: flex; gap: 8px; margin-top: 8px; }
+.offramp { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .offramp .stage {
-  flex: 0 0 auto; flex-direction: row; align-items: baseline; gap: 7px;
+  flex: 0 0 auto; min-width: 0; flex-direction: row; align-items: baseline; gap: 7px;
   background: var(--surface); border: 1px solid var(--line-soft); padding: 8px 13px;
 }
 .offramp .stage .stage-n { font-size: 16px; color: var(--muted); }
