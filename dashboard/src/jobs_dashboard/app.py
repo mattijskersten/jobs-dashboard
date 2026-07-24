@@ -30,6 +30,19 @@ from . import db, sessions, tasks
 HERE = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(HERE / "templates"))
 
+
+def _static_v(path: str) -> int:
+    """Cache-busting version for a static asset: its mtime. Phones cache
+    app.css/app.js past deploys otherwise (static serving sends no max-age,
+    but mobile Chrome reuses heuristically-fresh responses without asking)."""
+    try:
+        return int((HERE / "static" / path).stat().st_mtime)
+    except OSError:
+        return 0
+
+
+templates.env.globals["static_v"] = _static_v
+
 # Default list view: the queues a human actually reviews.
 DEFAULT_STATUS = "needs-review,shortlisted"
 
