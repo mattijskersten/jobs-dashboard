@@ -6,6 +6,14 @@ routes, which require the current deployment's build id. The build id
 changes on every deploy, so it is scraped from the homepage and refreshed
 whenever a data route starts returning 404. See API_NOTES.md for the full
 endpoint documentation.
+
+Transport: the site sits behind Cloudflare, which (observed 2026-07-28)
+serves a managed challenge to any client whose TLS/HTTP2 handshake doesn't
+look like a real browser's — a plain ``httpx``/``requests`` client gets a
+403 challenge page on every route. ``curl_cffi`` replays Chrome's actual
+TLS (JA3) and HTTP2 fingerprint via ``impersonate``, so Cloudflare treats
+it as a browser and the data routes return JSON directly. No cookie,
+headless browser or User-Agent spoofing is involved.
 """
 
 from __future__ import annotations
@@ -17,7 +25,8 @@ import time
 from typing import Any
 from urllib.parse import quote
 
-import httpx
+from curl_cffi import requests as curl_requests
+from curl_cffi.requests import exceptions as curl_exc
 
 # The site migrated from hiring.cafe to hiringcafe.com (observed 2026-07-15).
 # The old domain still serves the homepage HTML (with a valid buildId) but its
@@ -25,13 +34,10 @@ import httpx
 # extraction fails. The new domain serves the data routes correctly.
 BASE_URL = "https://hiringcafe.com"
 
-_BROWSER_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-    ),
-    "Accept": "application/json",
-}
+# curl_cffi impersonation target. "chrome" tracks the newest Chrome profile
+# curl_cffi ships, which is what currently clears Cloudflare's check; pin to a
+# specific profile (e.g. "chrome124") only if a future default regresses.
+_IMPERSONATE = "chrome"
 
 _BUILD_ID_RE = re.compile(r'"buildId":"([^"]+)"')
 
@@ -53,18 +59,21 @@ class NotFoundError(HiringCafeError):
 
 
 class BlockedError(HiringCafeError):
-    """Vercel's bot protection flagged this client (HTTP 403 checkpoint).
+    """Cloudflare (or Vercel) served a bot-challenge instead of data (HTTP 403).
 
-    Temporary and IP-level; triggered by heavy request volume. Back off for
-    a while — do not retry in a loop, that extends the block.
+    With curl_cffi's Chrome impersonation this should not normally happen. If
+    it does, Cloudflare has tightened its check for this IP or the impersonation
+    profile has gone stale — back off for a while (do not retry in a loop, that
+    extends the block) and, if it persists, bump ``_IMPERSONATE`` to a newer
+    Chrome profile.
     """
 
 
 class HiringCafeClient:
     def __init__(self, timeout: float = 30.0):
-        self._http = httpx.Client(
-            base_url=BASE_URL, headers=_BROWSER_HEADERS, timeout=timeout,
-            follow_redirects=True,
+        self._http = curl_requests.Session(
+            base_url=BASE_URL, impersonate=_IMPERSONATE, timeout=timeout,
+            allow_redirects=True,
         )
         self._build_id: str | None = None
         self._lock = threading.Lock()
@@ -92,13 +101,13 @@ class HiringCafeClient:
 
     # -- low-level request handling ----------------------------------------
 
-    def _request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+    def _request(self, method: str, url: str, **kwargs: Any):
         for attempt in range(RATE_LIMIT_RETRIES + 1):
             try:
                 resp = self._http.request(method, url, **kwargs)
-            except httpx.TimeoutException as exc:
+            except curl_exc.Timeout as exc:
                 raise HiringCafeError(f"hiring.cafe request timed out: {exc}") from exc
-            except httpx.HTTPError as exc:
+            except curl_exc.RequestException as exc:
                 raise HiringCafeError(f"Could not reach hiring.cafe: {exc}") from exc
             if resp.status_code != 429:
                 break
@@ -109,12 +118,15 @@ class HiringCafeClient:
                     "backoff. Wait a minute before trying again."
                 )
             time.sleep(self._retry_delay(resp, attempt))
-        if resp.status_code == 403 and "Vercel Security Checkpoint" in resp.text:
+        if resp.status_code == 403 and self._is_bot_challenge(resp):
             raise BlockedError(
-                "hiring.cafe's bot protection flagged this client (Vercel "
-                "Security Checkpoint, HTTP 403). The block is temporary and "
-                "IP-level — stop making requests and retry in 15–60 minutes. "
-                "Pace bulk calls at 1/s to avoid this."
+                "hiring.cafe's bot protection served a challenge instead of "
+                "data (HTTP 403). curl_cffi's Chrome impersonation usually "
+                "clears it, so this means Cloudflare has tightened its check "
+                "for this IP or the impersonation profile has gone stale — stop "
+                "making requests and retry in 15–60 minutes; if it persists, "
+                "bump _IMPERSONATE to a newer Chrome profile. Pace bulk calls "
+                "at 1/s to avoid tripping it."
             )
         if resp.status_code >= 500:
             raise HiringCafeError(
@@ -124,7 +136,21 @@ class HiringCafeClient:
         return resp
 
     @staticmethod
-    def _retry_delay(resp: httpx.Response, attempt: int) -> float:
+    def _is_bot_challenge(resp: Any) -> bool:
+        """True if a 403 is a bot-challenge page rather than a real forbidden.
+
+        Covers Vercel's "Security Checkpoint" and Cloudflare's managed
+        challenge (signalled by the ``cf-mitigated: challenge`` header or the
+        interstitial's "Just a moment..." title).
+        """
+        if "Vercel Security Checkpoint" in resp.text:
+            return True
+        if resp.headers.get("cf-mitigated") == "challenge":
+            return True
+        return "<title>Just a moment..." in resp.text
+
+    @staticmethod
+    def _retry_delay(resp: Any, attempt: int) -> float:
         retry_after = resp.headers.get("Retry-After")
         if retry_after:
             try:

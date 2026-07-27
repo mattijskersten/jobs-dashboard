@@ -135,14 +135,30 @@ The place's `options` field controls scope and changes results dramatically:
 The MCP server uses the radius form when `location_radius_miles` is passed
 and the flexible_regions form otherwise.
 
+## Transport / Cloudflare
+
+The site is fronted by Cloudflare. From **2026-07-24** onward, a plain
+`httpx`/`requests` client got a **403 Cloudflare managed challenge** on every
+route (response header `cf-mitigated: challenge`, interstitial title "Just a
+moment...") — the block is on the **TLS/HTTP2 fingerprint**, not the IP or
+User-Agent: the same IP loads the site fine in a real desktop browser, and a
+headless/automated browser in a software-WebGL container (Crostini) fails the
+follow-on Cloudflare Turnstile ("WebGL renderer spoofed") in an infinite loop.
+
+The fix (`api.py`): use `curl_cffi` with `impersonate="chrome"`, which replays
+Chrome's real JA3/HTTP2 fingerprint. Cloudflare then returns the data routes
+directly — **no cookie, no browser, no UA spoofing**. Verified 2026-07-28:
+homepage/buildId, `/api/searchLocation`, search and job data routes all 200.
+If challenges return, bump `_IMPERSONATE` to a newer Chrome profile.
+
 ## Error signals observed
 
 - Stale buildId → HTTP 404 on data routes.
-- Heavy request volume (e.g. paginated backfills plus bulk details calls) →
-  HTTP 403 "Vercel Security Checkpoint" page on **all** routes, including the
-  homepage, so the buildId scrape fails too. Temporary, IP-level; observed
-  2026-06-12. Raised as `BlockedError` — back off 15–60 min, do not retry in
-  a loop. Pace bulk calls at 1/s.
+- 403 bot challenge on **all** routes (homepage included, so the buildId scrape
+  fails too). Two variants: Vercel "Security Checkpoint" (observed 2026-06-12,
+  volume-triggered, temporary/IP-level) and Cloudflare managed challenge
+  (`cf-mitigated: challenge`, observed 2026-07-24, fingerprint-based — see
+  Transport above). Both raise `BlockedError`. Pace bulk calls at 1/s.
 - `POST /api/search-jobs` (an older endpoint mentioned in community
   projects) now returns 405 — do not use.
 - Rate limiting → HTTP 429 (not observed in testing, handled defensively).

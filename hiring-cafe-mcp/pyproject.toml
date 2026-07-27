@@ -6,7 +6,9 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "fastmcp>=2.0",
-    "httpx>=0.27",
+    # curl_cffi impersonates Chrome's TLS/HTTP2 fingerprint so Cloudflare's
+    # managed challenge lets the data-route requests through (see api.py).
+    "curl_cffi>=0.7",
     # scripts/ingest-jobs.py runs in this venv (via scripts/ingest.sh) and
     # reads data/search-config.yaml
     "pyyaml>=6.0",

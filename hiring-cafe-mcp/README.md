@@ -9,6 +9,13 @@ It talks to hiring.cafe's **unofficial** internal API (no authentication, no
 browser). The endpoints are documented in [API_NOTES.md](API_NOTES.md) — read
 that first when something breaks, because the API can change without notice.
 
+The site sits behind Cloudflare, which serves a bot challenge to any client
+whose TLS handshake doesn't look like a real browser's. The transport uses
+[`curl_cffi`](https://github.com/lexiforest/curl_cffi) to impersonate Chrome's
+TLS/HTTP2 fingerprint, so no headless browser or cookie is needed. If Cloudflare
+ever starts challenging again, bump `_IMPERSONATE` in `api.py` to a newer Chrome
+profile (see the note there).
+
 ## Setup
 
 Requires Python ≥ 3.10 and [uv](https://docs.astral.sh/uv/).
