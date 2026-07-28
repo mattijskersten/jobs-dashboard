@@ -2,9 +2,14 @@
 
 Company/title normalization plus a Jaccard title-similarity match, lifted out
 of the ingest-linkedin skill's prose so LinkedIn collection dedups by a fixed,
-tested rule on every run instead of depending on the model re-deriving it. The
-hiring.cafe arm dedups on exact `job_id` inside the MCP server; this module adds
-the cross-source (LinkedIn-vs-hiring.cafe) fuzzy check that only LinkedIn needs.
+tested rule on every run instead of depending on the model re-deriving it.
+
+Both ingest arms use `find_cross_source_dup` to catch the same role collected
+via the other source (their id namespaces never collide, so an id-only check
+misses cross-source duplicates). This makes collection order-independent —
+whichever arm runs second skips what the first already landed. `classify` wraps
+this with linkedin-* id bookkeeping for the LinkedIn arm; ingest-jobs.py calls
+`find_cross_source_dup` directly.
 """
 
 import re

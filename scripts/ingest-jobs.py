@@ -37,6 +37,8 @@ sys.path.insert(0, str(ROOT / "hiring-cafe-mcp" / "src"))
 from hiring_cafe_mcp.api import HiringCafeClient, HiringCafeError  # noqa: E402
 from hiring_cafe_mcp.server import _dedupe, _summarize_hit  # noqa: E402
 
+from dedup import find_cross_source_dup, norm_company, norm_title  # noqa: E402
+
 CONFIG_PATH = ROOT / "data" / "search-config.yaml"
 MAX_SERVER_PAGES = 25  # safety stop: 25 × 40 = 1000 unique jobs per pass
 
@@ -146,7 +148,29 @@ def main() -> None:
 
     db = sqlite3.connect(ROOT / "data" / "jobs.db")
     known = {r[0] for r in db.execute("SELECT job_id FROM jobs")}
-    new = {jid: v for jid, v in jobs.items() if jid not in known}
+    # Cross-source dedup: skip a hiring.cafe hit whose (company, title) already
+    # matches an existing row of ANY source — e.g. a LinkedIn row collected in
+    # an earlier run. Deduping on job_id alone (hiring.cafe ids never collide
+    # with linkedin-* ids) silently re-inserted such jobs whenever hiring.cafe
+    # ran after LinkedIn; dedup.find_cross_source_dup makes both arms
+    # order-independent. Accepted rows fold into `existing` so same-batch
+    # near-duplicates (two postings of one role) collapse too.
+    existing = [
+        (norm_company(c), norm_title(t))
+        for c, t in db.execute("SELECT company, title FROM jobs")
+    ]
+    new: dict[str, tuple[str, dict]] = {}
+    cross_skipped = 0
+    for jid, (track, s) in jobs.items():
+        if jid in known:
+            continue
+        company = s.get("company") or "(unknown)"
+        title = s.get("title") or "(unknown)"
+        if find_cross_source_dup(company, title, existing):
+            cross_skipped += 1
+            continue
+        new[jid] = (track, s)
+        existing.append((norm_company(company), norm_title(title)))
 
     with db:  # one transaction
         for jid, (track, s) in new.items():
@@ -169,7 +193,9 @@ def main() -> None:
 
     print(
         f"\ningest done: {len(jobs)} unique jobs across passes, "
-        f"{len(known & jobs.keys())} already known, {len(new)} inserted as 'seen'"
+        f"{len(known & jobs.keys())} already known by id, "
+        f"{cross_skipped} cross-source dup(s) skipped, "
+        f"{len(new)} inserted as 'seen'"
     )
     if errors:
         print("errors (partial ingest, digest must mention these):")
