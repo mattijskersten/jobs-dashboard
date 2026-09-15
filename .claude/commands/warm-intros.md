@@ -54,7 +54,6 @@ Suggested spend, adapting to what each step returns:
 4. `get_person_profile` on **at most 2** finalists, to confirm relevance and
    find common ground (shared employers, shared groups, home city).
 
-
 Finding nothing warm is a valid outcome — a cold-but-direct hiring-manager
 note is still the payoff. Do not spend extra calls hunting for a 2nd-degree
 path that isn't there.

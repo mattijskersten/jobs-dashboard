@@ -1,8 +1,8 @@
 """Tests for the LinkedIn dedup logic (scripts/dedup.py) and the ingest script.
 
-Fixtures mirror the shapes seen in a real run, with fictional companies:
-Northwind (exact id dup), Fabrikam (cross-source fuzzy dup), Contoso Cloud and Tailspin
-(genuine survivors). They pin the normalization rules and the 0.6 threshold so a
+Fixtures mirror the shapes seen in a real run, with fictional companies: Northwind
+(exact id dup), Fabrikam (cross-source fuzzy dup vs a hiring.cafe row), Contoso
+Cloud and Tailspin (genuine survivors). They pin the normalization rules and the 0.6 threshold so a
 future edit that would silently start merging or splitting jobs fails loudly.
 """
 

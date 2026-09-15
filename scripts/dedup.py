@@ -13,6 +13,7 @@ this with linkedin-* id bookkeeping for the LinkedIn arm; ingest-jobs.py calls
 """
 
 import re
+from pathlib import Path
 
 # Legal-entity suffixes stripped from a company before comparison. Kept short
 # and lowercase; matched as trailing whole tokens (see norm_company).
@@ -24,10 +25,27 @@ _COMPANY_SUFFIXES = (
 # Words dropped from a title before comparison: work-mode and geography. These
 # are noise for role identity. (Gender tags like f/m/x are removed separately by
 # _GENDER_TAG below, before tokenization, since slashes split them into letters.)
-_TITLE_STOPWORDS = {
+_BASE_TITLE_STOPWORDS = {
     "remote", "hybrid", "onsite", "on", "site",
     "emea", "eea", "eu", "europe", "european", "union", "area",
 }
+
+
+def _location_tokens() -> set[str]:
+    """Tokens of the configured search location (data/search-config.yaml), so
+    "Head of Product (Remote, <Your City>)" normalizes like the bare title.
+    No config means no extra tokens; the file is parsed by regex to keep this
+    module stdlib-only."""
+    cfg = Path(__file__).resolve().parent.parent / "data" / "search-config.yaml"
+    try:
+        text = cfg.read_text(encoding="utf-8")
+    except OSError:
+        return set()
+    m = re.search(r'^location:\s*"?([^"#\n]+)', text, re.M)
+    return set(re.findall(r"[a-z]+", m.group(1).lower())) if m else set()
+
+
+_TITLE_STOPWORDS = _BASE_TITLE_STOPWORDS | _location_tokens()
 
 # "(f/m/x)", "m/f/d", "w/m" and the like — a run of gender letters joined by
 # slashes. Stripped before cleaning so the letters never become bare tokens.
